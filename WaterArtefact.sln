@@ -4,6 +4,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.31729.503
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WaterArtefact", "WaterArtefact\WaterArtefact.vcxproj", "{6EC806C5-E78C-4EE8-8CDC-93A7C9CE69A3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14} = {F772FD55-96ED-4F63-A3CC-99703CD17C14}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Maths", "Maths\Maths.vcxproj", "{F772FD55-96ED-4F63-A3CC-99703CD17C14}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rendering", "Rendering\Rendering.vcxproj", "{98A03F9F-2317-490F-B58B-4F62D393C0B8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +28,22 @@ Global
 		{6EC806C5-E78C-4EE8-8CDC-93A7C9CE69A3}.Release|x64.Build.0 = Release|x64
 		{6EC806C5-E78C-4EE8-8CDC-93A7C9CE69A3}.Release|x86.ActiveCfg = Release|Win32
 		{6EC806C5-E78C-4EE8-8CDC-93A7C9CE69A3}.Release|x86.Build.0 = Release|Win32
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14}.Debug|x64.ActiveCfg = Debug|x64
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14}.Debug|x64.Build.0 = Debug|x64
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14}.Debug|x86.ActiveCfg = Debug|Win32
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14}.Debug|x86.Build.0 = Debug|Win32
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14}.Release|x64.ActiveCfg = Release|x64
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14}.Release|x64.Build.0 = Release|x64
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14}.Release|x86.ActiveCfg = Release|Win32
+		{F772FD55-96ED-4F63-A3CC-99703CD17C14}.Release|x86.Build.0 = Release|Win32
+		{98A03F9F-2317-490F-B58B-4F62D393C0B8}.Debug|x64.ActiveCfg = Debug|x64
+		{98A03F9F-2317-490F-B58B-4F62D393C0B8}.Debug|x64.Build.0 = Debug|x64
+		{98A03F9F-2317-490F-B58B-4F62D393C0B8}.Debug|x86.ActiveCfg = Debug|Win32
+		{98A03F9F-2317-490F-B58B-4F62D393C0B8}.Debug|x86.Build.0 = Debug|Win32
+		{98A03F9F-2317-490F-B58B-4F62D393C0B8}.Release|x64.ActiveCfg = Release|x64
+		{98A03F9F-2317-490F-B58B-4F62D393C0B8}.Release|x64.Build.0 = Release|x64
+		{98A03F9F-2317-490F-B58B-4F62D393C0B8}.Release|x86.ActiveCfg = Release|Win32
+		{98A03F9F-2317-490F-B58B-4F62D393C0B8}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
