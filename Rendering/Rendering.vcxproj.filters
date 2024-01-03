@@ -28,17 +28,8 @@
     <Filter Include="STB_image">
       <UniqueIdentifier>{8b8388ff-f1c5-45cf-941e-87c4b20ab799}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Rendering Resources">
-      <UniqueIdentifier>{ddd82822-464b-4832-9518-aa429aba6818}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Cameras">
       <UniqueIdentifier>{08b049ed-f47d-4c23-82e9-2deee4edb193}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Buffers">
-      <UniqueIdentifier>{a61b6d17-cc76-42b4-bda9-5bb941a07adc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Buffers">
-      <UniqueIdentifier>{2720b9ce-73ac-4801-aadb-e1004aa69141}</UniqueIdentifier>
     </Filter>
     <Filter Include="Shaders">
       <UniqueIdentifier>{d7319ff4-cb3c-4dc6-a038-ff910a49eb0c}</UniqueIdentifier>
@@ -51,12 +42,6 @@
     </Filter>
     <Filter Include="Source Files\Tracker">
       <UniqueIdentifier>{0fc9fc30-e249-4e25-85fd-18b19c113361}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Octree">
-      <UniqueIdentifier>{475f89ca-0185-4332-b1ec-448fcaf7a189}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Octree">
-      <UniqueIdentifier>{36f7a389-43ca-41bb-a53e-98ff8a352b96}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Lights">
       <UniqueIdentifier>{124a6844-66ff-4524-be71-bd8b06542da4}</UniqueIdentifier>
@@ -114,14 +99,8 @@
     <ClInclude Include="Code\STB_Image\STB_ImageInit.h">
       <Filter>STB_image</Filter>
     </ClInclude>
-    <ClInclude Include="Code\RenderingResources\RenderingResources.h">
-      <Filter>Rendering Resources</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Camera.h">
       <Filter>Cameras</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\BufferStore.h">
-      <Filter>Header Files\Buffers</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\imgui\imconfig.h">
       <Filter>ImGui</Filter>
@@ -150,9 +129,6 @@
     <ClInclude Include="Code\RenderingResourceTracking.h">
       <Filter>Header Files\Tracker</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Octree.h">
-      <Filter>Header Files\Octree</Filter>
-    </ClInclude>
     <ClInclude Include="Code\LightCollection.h">
       <Filter>Header Files\Lights</Filter>
     </ClInclude>
@@ -165,14 +141,14 @@
     <ClInclude Include="Code\Framebuffers.h">
       <Filter>Header Files\Framebuffer</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Buffers.h">
-      <Filter>Header Files\Buffers</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Skybox.h">
       <Filter>Header Files\Skybox</Filter>
     </ClInclude>
     <ClInclude Include="Code\OpenGLRenderPipeline.h">
       <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\AssertMsg.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -185,9 +161,6 @@
     <ClCompile Include="Code\Textures\Texture.cpp">
       <Filter>Source Files\Texture</Filter>
     </ClCompile>
-    <ClCompile Include="Code\RenderingResources\RenderingResources.cpp">
-      <Filter>Rendering Resources</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -196,9 +169,6 @@
     </ClCompile>
     <ClCompile Include="Code\Camera.cpp">
       <Filter>Cameras</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\BufferStore.cpp">
-      <Filter>Source Files\Buffers</Filter>
     </ClCompile>
     <ClCompile Include="..\Include\imgui\imgui.cpp">
       <Filter>ImGui</Filter>
@@ -223,9 +193,6 @@
     </ClCompile>
     <ClCompile Include="Code\RenderingResourceTracking.cpp">
       <Filter>Source Files\Tracker</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Octree.cpp">
-      <Filter>Source Files\Octree</Filter>
     </ClCompile>
     <ClCompile Include="Code\LightCollection.cpp">
       <Filter>Source Files\Lights</Filter>

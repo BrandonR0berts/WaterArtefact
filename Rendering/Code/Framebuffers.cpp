@@ -33,8 +33,6 @@ namespace Rendering
 				mColourBuffers[i].second = nullptr;
 
 				glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
-
-				//glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
 			}
 		}
 		mColourBuffers.clear();
@@ -44,7 +42,6 @@ namespace Rendering
 			mDepthBuffer = nullptr;
 
 			glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-			//glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
 		}
 
 		if (mStencilBuffer)
@@ -52,7 +49,6 @@ namespace Rendering
 			mStencilBuffer = nullptr;
 
 			glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-			//glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
 		}
 
 		SetActive(false, true);

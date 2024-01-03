@@ -15,10 +15,6 @@ namespace Rendering
 		void Update(const float deltaTime) override;
 		void Render()                      override;
 
-		// Useful for reflections - this is a very expensive function to call, so do it rarely
-		Texture::CubeMapTexture* RenderIntoCubemap(Maths::Vector::Vector3D<float> position, Maths::Vector::Vector2D<unsigned int> resolution, std::string newTextureName, bool generateMipMaps) override;
-		void                     RenderIntoCubemap(Maths::Vector::Vector3D<float> position, Texture::CubeMapTexture* textureToWriteInto, Maths::Vector::Vector2D<unsigned int> resolution, bool generateMipMaps) override;
-
 		// -------------------------------------------- //
 
 		// Static functionality specific to OpenGL
@@ -45,35 +41,12 @@ namespace Rendering
 
 		// -------------------------------------------- //
 
-#ifdef _DEBUG_BUILD
 		void              SetupImGui()    override;
 		void              ShutdownImGui() override;
-
-		int               GetModelMeshRenderDepth()         { return mModelMeshRenderDepth;    }
-		void              AdjustMeshRenderDepth(int amount) { mModelMeshRenderDepth += amount; if (mModelMeshRenderDepth < -1) mModelMeshRenderDepth = -1; }
-
-		void              RenderTextureBindInfo() override;
-#endif
 
 		// -------------------------------------------- //
 
 	private:
-		// -------------------
-
-		// Shadows
-		void              GenerateShadowMaps() override;
-		void              RenderShadowIntoMap(ShadowImageSegment& segmentData, Rendering::LightCollection& lights, unsigned int index, float portion) override;
-
-		// -------------------
-
-		// UI
-		bool              HandlePlayingVideos();
-		void              RenderVideo(VideoFrames* video) override;
-
-		// -------------------
-
-		void              RenderForReflections(Maths::Vector::Vector3D<float> positon, glm::mat4 viewMatrix, glm::mat4 projectionMatrix, bool includeShadows = true, bool includeParticles = false) override;
-
 		// -------------------
 
 		std::vector<std::pair<GLenum, unsigned int>> mTextureUnitBindings;
@@ -89,10 +62,6 @@ namespace Rendering
 
 		bool                                         mBackFaceCullingEnabled;
 
-#ifdef _DEBUG_BUILD
-		int                                          mModelMeshRenderDepth;
-#endif
-
 		// ---------------------------------------------------------------- //
 
 		std::string ConvertTextureBindingToString(GLenum bindingPoint);
@@ -100,8 +69,6 @@ namespace Rendering
 		// ---------------------------------------------------------------- //
 
 		void FinalRenderToScreen();		
-
-		void RenderGameWorld();
 
 		// -------------------------------------------- //
 

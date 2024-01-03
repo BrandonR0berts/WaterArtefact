@@ -1,12 +1,6 @@
 #pragma once
 
-#include "BufferStore.h"
-#include "Engine/Code/Timer.h"
-
-#ifdef _DEBUG_BUILD
-	#include "ProjectCube/Code/LevelEditor.h"
-	#include "ProjectCube/Code/EntityViewer.h"
-#endif
+#include "Maths/Code/Timer.h"
 
 #include "Maths/Code/Vector.h"
 #include "Maths/Code/Matrix.h"
@@ -39,10 +33,10 @@ namespace Rendering
 
 		// ----
 
-		static inline ResourceCollection&   GetResourceCollection() { return mResourceCollection;  }
+		// The store of compiled shaders
 		static inline ShaderStore&          GetShaderStore()        { return mShaderStore;         }
-		static inline Buffers::BufferStore& GetBufferStore()        { return mBufferStore;		   }
 
+		// The pipeline that stores the current state of the GPU and handlled swapping states
 		static inline RenderPipeline*       GetRenderPipeline()     { return sRenderPipeline;	   }
 
 		// ----
@@ -57,11 +51,9 @@ namespace Rendering
 
 		// ----
 
-#ifdef _DEBUG_BUILD
 		static bool                  UsingDebugOverlay();
 		static void                  ToggleDebugOverlay();
 		static bool                  GetLineMode();
-#endif
 
 		       void         OnScreenSizeChanged(std::string data);
 
@@ -104,10 +96,6 @@ namespace Rendering
 
 		// -------------------------------------------------
 
-#ifdef _DEBUG_BUILD
-		Game::LevelEditor* GetLevelEditor() { return mLevelEditor; }
-#endif
-
 	private:
 
 		// ----
@@ -136,13 +124,9 @@ namespace Rendering
 
 		// -------------------------------
 
-#ifdef _DEBUG_BUILD
 		void RenderDebugMenu(const float deltaTime);
-		void RenderRenderingDebugOverlay();
-		void RenderPerformanceTimings();
 
 		void CameraDebugWindow();
-#endif
 
 		// -------------------------------
 
@@ -152,16 +136,9 @@ namespace Rendering
 
 		static RenderPipeline* sRenderPipeline;
 
-#ifdef _DEBUG_BUILD
-		Game::LevelEditor*  mLevelEditor;
-		Game::EntityViewer  mEntityDebugViewer;
-#endif
-
 		// -------------------------------
 
 		static ShaderStore          mShaderStore;
-		static ResourceCollection   mResourceCollection;
-		static Buffers::BufferStore mBufferStore;
 
 		static bool                 mInitialised;
 		static bool                 sWindowBeingResized;
@@ -170,7 +147,6 @@ namespace Rendering
 
 		// -----
 
-#ifdef _DEBUG_BUILD
 		static bool                 sUsingDebugOverlay;
 		static Engine::Timer::Timer sDebugToggleTimer;
 		static float                sTimeBetweenDebugToggles;
@@ -178,18 +154,8 @@ namespace Rendering
 		static unsigned int         sFramesRenderedThisSecondSoFar;
 		static unsigned int         sFramesRenderedLastSecond;
 
-		bool                        mUsingRenderingOverlay;
-		bool                        mUsingLevelEditorOverlay;
-		bool                        mUsingVisualsEditor;
-
-		bool                        mShowingTextureBindData;
-
-		bool                        mShowPerformanceTimings;
-
-		static bool                 mActiveModelLineMode;
-
 		bool                        mDisplayCameraDebugInfo;
-#endif		
+		static bool                 mActiveModelLineMode;
 
 		// -----
 	};
