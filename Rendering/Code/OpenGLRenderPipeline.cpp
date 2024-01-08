@@ -38,7 +38,12 @@ namespace Rendering
 		, mVAOVideo(nullptr)
 		, mVBOVideo(nullptr)
 
+		, mColourTexture(nullptr)
+		, mDepthTexture(nullptr)
+
 		, mFinalRenderProgram(nullptr)
+
+		, mWaterSimulation(nullptr)
 	{
 
 	}
@@ -153,6 +158,8 @@ namespace Rendering
 
 		SetupShaders();
 
+		mWaterSimulation = new WaterSimulation();
+
 		return true;
 	}
 
@@ -203,6 +210,27 @@ namespace Rendering
 		mVBOVideo->UnBind();
 
 		// -------------------------------------------------------------
+
+		if (!mFinalRenderFBO)
+		{
+			mFinalRenderFBO = new Framebuffer();
+
+			unsigned int screenWidth  = GetScreenWidth();
+			unsigned int screenHeight = GetScreenHeight();
+
+			// Colour buffer
+			mColourTexture = new Texture::Texture2D();
+			mColourTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
+
+			// Depth buffer
+			mDepthTexture = new Texture::Texture2D();
+			mDepthTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
+
+			mFinalRenderFBO->AttachColourBuffer(mColourTexture);
+			mFinalRenderFBO->AttachDepthBuffer(mDepthTexture);
+
+			mFinalRenderFBO->CheckComplete();
+		}
 	}
 
 	void OpenGLRenderPipeline::SetupImGui()
@@ -244,27 +272,6 @@ namespace Rendering
 
 	void OpenGLRenderPipeline::Update(const float deltaTime)
 	{
-		if (!mFinalRenderFBO)
-		{
-			mFinalRenderFBO = new Framebuffer();
-
-			unsigned int screenWidth  = GetScreenWidth();
-			unsigned int screenHeight = GetScreenHeight();
-
-			// Colour buffer
-			mColourTexture = new Texture::Texture2D();
-			mColourTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
-
-			// Depth buffer
-			mDepthTexture = new Texture::Texture2D();
-			mDepthTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
-
-			mFinalRenderFBO->AttachColourBuffer(mColourTexture);
-			mFinalRenderFBO->AttachDepthBuffer(mDepthTexture);
-
-			mFinalRenderFBO->CheckComplete();
-		}
-
 		if (mActiveCamera)
 		{
 			mActiveCamera->Update(deltaTime);
@@ -275,7 +282,7 @@ namespace Rendering
 
 	void OpenGLRenderPipeline::Render()
 	{
-		if (!mFinalRenderFBO)
+		if (!mFinalRenderFBO || !mWaterSimulation)
 			return;
 
 		// -----------------------------------------------------------
@@ -293,6 +300,23 @@ namespace Rendering
 
 		// --------------------------------
 
+		// See if the camera is above or below the surface
+		if (mWaterSimulation->IsBelowSurface(mActiveCamera->GetPosition()))
+		{
+
+		}
+		else
+		{
+			// Render the sub-surface models
+
+			// Render the water's surface
+			mWaterSimulation->Render();
+
+			// Render everything above the surface
+		}
+
+		// --------------------------------
+
 		mFinalRenderFBO->SetActive(false, true);
 
 		// --------------------------------
@@ -301,6 +325,14 @@ namespace Rendering
 		FinalRenderToScreen();
 
 		// --------------------------------
+	}
+
+	// -------------------------------------------------
+
+	void OpenGLRenderPipeline:: RenderDebugMenu()
+	{
+		if (mWaterSimulation)
+			mWaterSimulation->RenderDebugMenu();
 	}
 
 	// -------------------------------------------------

@@ -82,6 +82,18 @@
     <Filter Include="Shaders\UI">
       <UniqueIdentifier>{bde817b0-e6bd-4ace-92ee-f502a00e515a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Water">
+      <UniqueIdentifier>{bdcef1ed-7b84-45cc-8001-dab8df8ff0b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Water">
+      <UniqueIdentifier>{d42101f3-998b-4463-abee-ffeb0ab8ebcd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FFT">
+      <UniqueIdentifier>{a2a188bc-744b-410c-8492-2d268e3059b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Water">
+      <UniqueIdentifier>{db0a02a0-2211-459f-89c8-9af6a849b42c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Window.h">
@@ -153,6 +165,12 @@
     <ClInclude Include="Code\Shaders\ShaderTypes.h">
       <Filter>Header Files\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Water.h">
+      <Filter>Header Files\Water</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\FFT.h">
+      <Filter>FFT</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Shaders\ShaderProgram.cpp">
@@ -208,6 +226,9 @@
     </ClCompile>
     <ClCompile Include="Code\OpenGLRenderPipeline.cpp">
       <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Water.cpp">
+      <Filter>Source Files\Water</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

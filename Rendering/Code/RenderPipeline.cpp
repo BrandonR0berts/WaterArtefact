@@ -30,6 +30,7 @@ namespace Rendering
 		, mMaxScreenHeight(1080)
 
 		, mWindow(nullptr)
+		, mShadowMap(nullptr)
 	{
 		
 	}
@@ -68,7 +69,7 @@ namespace Rendering
 	{
 		if (mFinalRenderFBO)
 		{
-			float intensity = 1.0f;
+			float intensity = 0.6f;
 			mFinalRenderFBO->ClearAll(intensity, intensity, intensity, 1.0f);
 		}
 	}

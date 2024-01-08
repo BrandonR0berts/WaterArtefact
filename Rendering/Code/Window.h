@@ -3,6 +3,8 @@
 #include "Maths/Code/Timer.h"
 #include "Rendering/Code/RenderPipeline.h"
 
+#include "Water.h"
+
 #include <thread>
 
 namespace Rendering
@@ -117,7 +119,6 @@ namespace Rendering
 		bool                mIsVsyncOn;
 		bool                mWindowShouldClose;
 		double              mOldTime;
-
 
 		static RenderPipeline* sRenderPipeline;
 

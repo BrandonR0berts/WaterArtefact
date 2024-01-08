@@ -215,12 +215,7 @@ namespace Rendering
 		// If using the menu
 		if (Rendering::Window::UsingDebugOverlay())
 		{
-			// Start the collection
-			ImGui::Begin("Deug menu");
-
-
-			// End the collection
-			ImGui::End();
+			((OpenGLRenderPipeline*)sRenderPipeline)->RenderDebugMenu();
 		}
 
 		// Render the new ImGui frame

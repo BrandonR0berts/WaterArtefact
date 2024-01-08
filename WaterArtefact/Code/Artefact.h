@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Rendering/Code/Water.h"
+
 namespace Rendering
 {
 	class Window;

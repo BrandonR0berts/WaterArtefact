@@ -2,6 +2,8 @@
 
 #include "RenderPipeline.h"
 
+#include "Water.h"
+
 #include <mutex>
 #include <glad/glad.h>
 
@@ -54,6 +56,8 @@ namespace Rendering
 
 		void              ResetTextureBindingInfo();
 
+		void              RenderDebugMenu();
+
 		// -------------------------------------------- //
 
 		bool              SetupGLFW()     override;
@@ -86,6 +90,8 @@ namespace Rendering
 
 		Texture::Texture2D* mColourTexture;
 		Texture::Texture2D* mDepthTexture;
+
+		WaterSimulation*    mWaterSimulation;
 
 		// ---------------------------------------------------------------- //
 
