@@ -1,7 +1,8 @@
 #pragma once
 
-#include <string>
+#include "Maths/Code/Vector.h"
 
+#include <string>
 #include <GLFW/glfw3.h>
 
 namespace Rendering

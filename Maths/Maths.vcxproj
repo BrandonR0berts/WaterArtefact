@@ -330,6 +330,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Code\AssertMsg.h" />
     <ClInclude Include="Code\Collision.h" />
     <ClInclude Include="Code\Common.h" />
     <ClInclude Include="Code\Matrix.h" />

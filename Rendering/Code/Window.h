@@ -1,11 +1,7 @@
 #pragma once
 
 #include "Maths/Code/Timer.h"
-
-#include "Maths/Code/Vector.h"
-#include "Maths/Code/Matrix.h"
-
-#include "RenderPipeline.h"
+#include "Rendering/Code/RenderPipeline.h"
 
 #include <thread>
 
@@ -33,11 +29,8 @@ namespace Rendering
 
 		// ----
 
-		// The store of compiled shaders
-		static inline ShaderStore&          GetShaderStore()        { return mShaderStore;         }
-
 		// The pipeline that stores the current state of the GPU and handlled swapping states
-		static inline RenderPipeline*       GetRenderPipeline()     { return sRenderPipeline;	   }
+		static inline RenderPipeline* GetRenderPipeline()     { return sRenderPipeline;	   }
 
 		// ----
 
@@ -55,12 +48,12 @@ namespace Rendering
 		static void                  ToggleDebugOverlay();
 		static bool                  GetLineMode();
 
-		       void         OnScreenSizeChanged(std::string data);
+		       void                  OnScreenSizeChanged(std::string data);
 
-		static void         SetWindowBeingResized(bool state) { sWindowBeingResized = state; }
-		static bool         GetBeingResized()                 { return sWindowBeingResized;  }
+		static void                  SetWindowBeingResized(bool state) { sWindowBeingResized = state; }
+		static bool                  GetBeingResized()                 { return sWindowBeingResized;  }
 
-		static unsigned int GetWindowWidth() 
+		static unsigned int          GetWindowWidth() 
 		{
 			if (!sRenderPipeline)
 				return 0;
@@ -68,7 +61,7 @@ namespace Rendering
 			return sRenderPipeline->GetScreenWidth();
 		}
 
-		static unsigned int GetWindowHeight()
+		static unsigned int         GetWindowHeight()
 		{
 			if (!sRenderPipeline)
 				return 0;
@@ -76,7 +69,7 @@ namespace Rendering
 			return sRenderPipeline->GetScreenHeight();
 		}
 
-		static unsigned int GetMaxWindowWidth()
+		static unsigned int        GetMaxWindowWidth()
 		{
 			if (!sRenderPipeline)
 				return 0;
@@ -86,7 +79,7 @@ namespace Rendering
 
 		// -------------------------------------------------
 
-		static unsigned int GetMaxWindowHeight()
+		static unsigned int       GetMaxWindowHeight()
 		{
 			if (!sRenderPipeline)
 				return 0;
@@ -110,8 +103,6 @@ namespace Rendering
 
 		// Backing framework
 		void ShutdownGLFW();
-		void SetupShaders();
-		void ClearShaders();
 
 		// ----
 
@@ -134,11 +125,16 @@ namespace Rendering
 		bool                mWindowShouldClose;
 		double              mOldTime;
 
-		static RenderPipeline* sRenderPipeline;
+		// Final render buffer data
+		Texture::Texture2D* mColourTexture;
+		Texture::Texture2D* mDepthTexture;
+
+		Framebuffer*        mFinalRenderFBO;
+
+
+		static RenderPipeline*      sRenderPipeline;
 
 		// -------------------------------
-
-		static ShaderStore          mShaderStore;
 
 		static bool                 mInitialised;
 		static bool                 sWindowBeingResized;

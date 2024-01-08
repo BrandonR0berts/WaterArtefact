@@ -1,12 +1,12 @@
 #ifndef _VECTOR_H_
 #define _VECTOR_H_
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+
 #include <math.h>
 #include <string>
 #include <vector>
-
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
 
 // This file defines Vector2D, Vector3D and Vector4D functionality
 

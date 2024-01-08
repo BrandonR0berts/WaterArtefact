@@ -5,7 +5,6 @@
 
 #include "Shaders/ShaderProgram.h"
 #include "Shaders/ShaderTypes.h"
-#include "Shaders/ShaderStore.h"
 
 #include "Input/Code/Input.h"
 #include "Input/Code/KeyboardInput.h"
@@ -16,6 +15,7 @@
 #include "Include/imgui/imgui_impl_opengl3.h"
 
 #include "Skybox.h"
+#include "Framebuffers.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -34,7 +34,13 @@ namespace Rendering
 		, mAlphaBlendingSFactor(GL_SRC_ALPHA)
 		, mAlphaBlendingDFactor(GL_ONE_MINUS_SRC_ALPHA)
 		, mBackFaceCullingEnabled(true)
+
+		, mVAOVideo(nullptr)
+		, mVBOVideo(nullptr)
+
+		, mFinalRenderProgram(nullptr)
 	{
+
 	}
 
 	// ---------------------------------------
@@ -145,10 +151,49 @@ namespace Rendering
 
 		glfwMakeContextCurrent(mWindow);
 
+		SetupShaders();
+
 		return true;
 	}
 
 	// -------------------------------------------------
+
+	void OpenGLRenderPipeline::SetupShaders()
+	{
+		// -------------------------------------------------------------
+
+		mFinalRenderProgram = new ShaderPrograms::ShaderProgram();
+
+		Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/Sprite.vert");
+		Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/Sprite.frag");
+
+		mFinalRenderProgram->AttachShader(vertexShader);
+		mFinalRenderProgram->AttachShader(fragmentShader);
+
+		mFinalRenderProgram->LinkShadersToProgram();
+
+		delete vertexShader;
+		delete fragmentShader;
+
+		// -------------------------------------------------------------
+
+		mVAOVideo = new Buffers::VertexArrayObject();
+		mVAOVideo->Bind();
+		mVAOVideo->SetVertexAttributePointers(0, 4, GL_FLOAT, false, 4 * sizeof(GL_FLOAT), 0, true);
+		mVAOVideo->Unbind();
+
+		mVBOVideo = new Buffers::VertexBufferObject();
+		static float renderingData[24] = { -1.0f, 1.0f, 0.0f, 1.0f,
+										   -1.0f, -1.0f, 0.0f, 0.0f,
+										    1.0f, -1.0f, 1.0f, 0.0f,
+
+										   -1.0f, 1.0f, 0.0f, 1.0f,
+											1.0f, -1.0f, 1.0f, 0.0f,
+										    1.0f, 1.0f, 1.0f, 1.0f };
+		mVBOVideo->SetBufferData(renderingData, 96, GL_STATIC_DRAW);
+
+		// -------------------------------------------------------------
+	}
 
 	void OpenGLRenderPipeline::SetupImGui()
 	{
@@ -204,6 +249,9 @@ namespace Rendering
 
 	void OpenGLRenderPipeline::Render()
 	{
+		if (!mFinalRenderFBO)
+			return;
+
 		// -----------------------------------------------------------
 
 		SetLineModeEnabled(Window::GetLineMode());
@@ -229,44 +277,35 @@ namespace Rendering
 
 	void OpenGLRenderPipeline::FinalRenderToScreen() 
 	{
-		if (!mFinalRenderFBO)
+		if (!mFinalRenderFBO || !mFinalRenderProgram)
 			return;
 
 		mFinalRenderFBO->SetActive(false, true);
 
 		// Now render the colour buffer stored in the final render buffer to the screen as a quad 
-		ShaderPrograms::ShaderProgram* finalRenderProgram;
-		if (Window::GetShaderStore().GetShaderProgram(Rendering::ShaderProgramTypes::UI_Video, finalRenderProgram))
+		SetDepthTestEnabled(false);
+
+		// Use this program
+		mFinalRenderProgram->UseProgram();
+
+		BindTextureToTextureUnit(GL_TEXTURE0, mFinalRenderFBO->GetColourBuffer()->GetTextureID());
+
+
+		//float*    projMatrix = &GetActiveCamera()->GetOrthoMatrix()[0][0];
+		glm::mat4 model = glm::mat4(1.0f);
+		// model = glm::scale(model, glm::vec3((float)Window::GetWindowWidth(), (float)Window::GetWindowHeight(), 1.0f));
+
+		mFinalRenderProgram->SetInt("imageToRender",  0);
+		mFinalRenderProgram->SetMat4("projectionMat", &model[0][0]);
+		mFinalRenderProgram->SetMat4("modelMat",      &model[0][0]);
+
+		if (mVAOVideo && mVBOVideo)
 		{
-			SetDepthTestEnabled(false);
+			mVAOVideo->Bind();
+			mVBOVideo->Bind();
 
-			// Use this program
-			finalRenderProgram->UseProgram();
-
-			BindTextureToTextureUnit(GL_TEXTURE0, mFinalRenderFBO->GetColourBuffer()->GetTextureID());
-
-
-			//float*    projMatrix = &GetActiveCamera()->GetOrthoMatrix()[0][0];
-			glm::mat4 model = glm::mat4(1.0f);
-			// model = glm::scale(model, glm::vec3((float)Window::GetWindowWidth(), (float)Window::GetWindowHeight(), 1.0f));
-
-			finalRenderProgram->SetInt("imageToRender", 0);
-			finalRenderProgram->SetMat4("projectionMat", &model[0][0]);
-			finalRenderProgram->SetMat4("modelMat", &model[0][0]);
-
-			// Bind the VAO for the video data
-			Buffers::BufferStore& bufferStore = Window::GetBufferStore();
-			Buffers::VertexArrayObject*  vao = bufferStore.GetVAO("VAO_Video");
-			Buffers::VertexBufferObject* vbo = bufferStore.GetVBO("VBO_Video");
-
-			if (vao && vbo)
-			{
-				vao->Bind();
-				vbo->Bind();
-
-				// Draw the image to the screen
-				glDrawArrays(GL_TRIANGLES, 0, 6);
-			}
+			// Draw the image to the screen
+			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 	}
 

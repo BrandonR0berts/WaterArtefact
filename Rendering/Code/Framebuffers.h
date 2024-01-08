@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Rendering/Code/AssertMsg.h"
+#include "Maths/Code/AssertMsg.h"
 #include "Rendering/Code/Buffers.h"
 #include "Maths/Code/Vector.h"
 

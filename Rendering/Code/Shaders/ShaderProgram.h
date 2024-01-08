@@ -4,7 +4,7 @@
 #include "Shader.h"
 
 #include "Maths/Code/Vector.h"
-#include "Engine/Code/AssertMsg.h"
+#include "Maths/Code/AssertMsg.h"
 
 #include "ShaderTypes.h"
 

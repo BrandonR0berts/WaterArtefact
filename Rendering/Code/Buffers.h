@@ -4,11 +4,9 @@
 // This file contains definitions for the different types of buffers OpenGL requires, along with the attribute linking code
 // This is all within the 'Buffers' namespace
 
-#include "Engine/Code/AssertMsg.h"
+#include "Maths/Code/AssertMsg.h"
 
-#ifdef _DEBUG_BUILD
-	#include "Rendering/Code/RenderingResourceTracking.h"
-#endif
+#include "Rendering/Code/RenderingResourceTracking.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -102,12 +100,11 @@ namespace Rendering
 
 			void SetBufferData(const GLvoid* data, unsigned int bytesInData, GLenum usage)
 			{
-#ifdef _DEBUG_BUILD
 				if (mBytesInData != bytesInData)
 				{
 					Rendering::TrackingData::AdjustGPUMemoryUsed(bytesInData - mBytesInData);
 				}
-#endif
+
 				Bind();
 				mBytesInData = bytesInData;
 				glBufferData(mTarget, mBytesInData, data, usage);
@@ -125,9 +122,7 @@ namespace Rendering
 				// Set all of the prior data as being null
 				glBufferData(mTarget, mBytesInData, NULL, usage);
 
-#ifdef _DEBUG_BUILD
 				Rendering::TrackingData::AdjustGPUMemoryUsed(bytesInData - mBytesInData);
-#endif
 
 				// Set the new size and store the new data
 				mBytesInData = bytesInData;
@@ -174,9 +169,7 @@ namespace Rendering
 				// Store the count
 				mBytesInData = bytes;
 
-#ifdef _DEBUG_BUILD
 				Rendering::TrackingData::AdjustGPUMemoryUsed(bytes);
-#endif
 			}
 
 			// --------------------------------
@@ -187,9 +180,7 @@ namespace Rendering
 
 			void Delete()
 			{
-#ifdef _DEBUG_BUILD
 				Rendering::TrackingData::AdjustGPUMemoryUsed(-((int)mBytesInData));
-#endif
 
 				glDeleteBuffers(1, &mVBO);
 				ASSERTMSG(glGetError() != 0, "Error deleteing buffers.");
@@ -253,12 +244,11 @@ namespace Rendering
 
 			void SetBufferData(const GLvoid* data, unsigned int bytesInData, GLenum usage)
 			{
-#ifdef _DEBUG_BUILD
 				if (mBytesInData != bytesInData)
 				{
 					Rendering::TrackingData::AdjustGPUMemoryUsed(bytesInData - mBytesInData);
 				}
-#endif
+
 				Bind();
 				mBytesInData = bytesInData;
 				glBufferData(GL_SHADER_STORAGE_BUFFER, mBytesInData, data, usage);
@@ -275,9 +265,7 @@ namespace Rendering
 				// Set all of the prior data as being null
 				glBufferData(GL_SHADER_STORAGE_BUFFER, mBytesInData, NULL, usage);
 
-#ifdef _DEBUG_BUILD
 				Rendering::TrackingData::AdjustGPUMemoryUsed(bytesInData - mBytesInData);
-#endif
 
 				// Set the new size and store the new data
 				mBytesInData = bytesInData;
@@ -323,9 +311,7 @@ namespace Rendering
 				// Store the count
 				mBytesInData = bytes;
 
-#ifdef _DEBUG_BUILD
 				Rendering::TrackingData::AdjustGPUMemoryUsed(bytes);
-#endif
 			}
 
 			// --------------------------------
@@ -343,9 +329,7 @@ namespace Rendering
 
 			void Delete()
 			{
-#ifdef _DEBUG_BUILD
 				Rendering::TrackingData::AdjustGPUMemoryUsed(-((int)mBytesInData));
-#endif
 
 				glDeleteBuffers(1, &mSSBO);
 				mBytesInData = 0;
@@ -396,10 +380,8 @@ namespace Rendering
 				Bind();
 
 				glBufferData(GL_ELEMENT_ARRAY_BUFFER, bytesForBuffer, data, usage);
-
-#ifdef _DEBUG_BUILD
+				
 				Rendering::TrackingData::AdjustGPUMemoryUsed(bytesForBuffer);
-#endif
 			}
 
 			// --------------------------------------------------------

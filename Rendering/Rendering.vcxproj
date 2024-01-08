@@ -43,7 +43,6 @@
     <ClInclude Include="..\Include\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\Include\imgui\imstb_textedit.h" />
     <ClInclude Include="..\Include\imgui\imstb_truetype.h" />
-    <ClInclude Include="Code\AssertMsg.h" />
     <ClInclude Include="Code\Camera.h" />
     <ClInclude Include="Code\Framebuffers.h" />
     <ClInclude Include="Code\LightCollection.h" />
@@ -52,7 +51,6 @@
     <ClInclude Include="Code\RenderPipeline.h" />
     <ClInclude Include="Code\Shaders\Shader.h" />
     <ClInclude Include="Code\Shaders\ShaderProgram.h" />
-    <ClInclude Include="Code\Shaders\ShaderStore.h" />
     <ClInclude Include="Code\Shaders\ShaderTypes.h" />
     <ClInclude Include="Code\Skybox.h" />
     <ClInclude Include="Code\STB_Image\stb_image.h" />
@@ -70,27 +68,18 @@
     <ClCompile Include="..\Include\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Include\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Code\Camera.cpp" />
-    <ClCompile Include="Code\ColourTableCollection.cpp" />
     <ClCompile Include="Code\Framebuffers.cpp" />
     <ClCompile Include="Code\LightCollection.cpp" />
     <ClCompile Include="Code\OpenGLRenderPipeline.cpp" />
     <ClCompile Include="Code\RenderingResourceTracking.cpp" />
-    <ClCompile Include="Code\RenderModelsCollection.cpp" />
     <ClCompile Include="Code\RenderPipeline.cpp" />
     <ClCompile Include="Code\Shaders\ShaderProgram.cpp" />
-    <ClCompile Include="Code\Shaders\ShaderStore.cpp" />
     <ClCompile Include="Code\Skybox.cpp" />
     <ClCompile Include="Code\Textures\Texture.cpp" />
     <ClCompile Include="Code\Window.cpp" />
     <ClCompile Include="glad.c" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Engine\Engine.vcxproj">
-      <Project>{2c0dae92-4f1f-4468-9abf-336de9a346bd}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\FileHandling\FileHandling.vcxproj">
-      <Project>{9c063210-fb61-4093-a8db-93ab4589bfb4}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Input\Input.vcxproj">
       <Project>{a73768a0-cbd6-48cc-85c5-1a5d59155f5a}</Project>
     </ProjectReference>
@@ -99,13 +88,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\ProjectCube\Shaders\Compute\ComputeShaders.json" />
-    <None Include="..\ProjectCube\Shaders\Fragment\FragmentShaders.json" />
-    <None Include="..\ProjectCube\Shaders\Fragment\Skybox.frag" />
-    <None Include="..\ProjectCube\Shaders\Geometry\GeometryShaders.json" />
-    <None Include="..\ProjectCube\Shaders\Programs\ShaderPrograms.json" />
-    <None Include="..\ProjectCube\Shaders\Vertex\Skybox.vert" />
-    <None Include="..\ProjectCube\Shaders\Vertex\VertexShaders.json" />
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap.frag" />
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap_Reflections.frag" />
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\Skybox.frag" />
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\Sprite.frag" />
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\ConvoluteCubeMap.vert" />
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\ConvoluteCubeMap_Reflections.vert" />
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\Skybox.vert" />
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\Sprite.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -221,13 +211,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)Libs;$(SolutionDir)Libs/FFmpeg;$(SolutionDir)Libs/FreeType;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)Libs;$(LibraryPath)</LibraryPath>
     <IncludePath>$(SolutionDir)Include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)Libs;$(SolutionDir)Libs/FFmpeg;$(SolutionDir)Libs/FreeType;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)Libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -342,7 +332,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;FFmpeg/swscale.lib;FFmpeg/swresample.lib;FFmpeg/postproc.lib;FFmpeg/avutil.lib;FFmpeg/avformat.lib;FFmpeg/avfilter.lib;FFmpeg/avdevice.lib;FFmpeg/avcodec.lib;OpenAL32.lib;FreeType_64/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)Include</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
@@ -352,7 +342,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_RELEASE_BUILD;_FINAL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;_RELEASE_BUILD;_FINAL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)</AdditionalIncludeDirectories>
@@ -365,7 +355,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;FFmpeg/swscale.lib;FFmpeg/swresample.lib;FFmpeg/postproc.lib;FFmpeg/avutil.lib;FFmpeg/avformat.lib;FFmpeg/avfilter.lib;FFmpeg/avdevice.lib;FFmpeg/avcodec.lib;OpenAL32.lib;FreeType_64/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)Include</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>

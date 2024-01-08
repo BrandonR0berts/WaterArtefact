@@ -2,6 +2,8 @@
 
 #include "Maths/Code/Vector.h"
 
+#include "Buffers.h"
+
 namespace Rendering
 {
 	// ---------------
@@ -95,7 +97,7 @@ namespace Rendering
 		std::vector<PointLight>       mPointLights;
 		std::vector<DirectionalLight> mDirectionalLights;
 
-
+		Rendering::Buffers::ShaderStorageBufferObject* mLightSSBO;
 
 		// Sizes in floats (4 bytes)
 		static const unsigned int SizeOfPointLightOnGPU       = 7; // 2 vec3's and 1 float

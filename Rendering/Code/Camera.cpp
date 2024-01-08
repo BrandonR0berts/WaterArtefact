@@ -4,7 +4,6 @@
 #include "Input/Code/Input.h"
 #include "Input/Code/KeyboardInput.h"
 #include "Input/Code/MouseInput.h"
-#include "Input/Code/GamepadInput.h"
 
 #include "Maths/Code/Matrix.h"
 
@@ -203,13 +202,7 @@ namespace Rendering
 		// Make sure to call the parent's upate
 		Camera::Update(deltaTime);
 
-		// ---------------------------
-
 		HandlePCInput(deltaTime);
-
-		HandleControllerInput(deltaTime);
-
-		// ---------------------------
 	}
 
 	// -------------------------------------------------------------------- //
@@ -345,82 +338,6 @@ namespace Rendering
 		mForward = combinedMatrix.MultiplyBy(mStartForward);
 		mRight   = combinedMatrix.MultiplyBy(mStartRight);
 		mUp      = combinedMatrix.MultiplyBy(mStartUp);
-	}
-
-	// -------------------------------------------------------------------- //
-
-	void DebugCamera::HandleControllerInput(const float deltaTime)
-	{
-		std::vector<Input::InputDevice*>& controllersAttached = Input::InputSingleton::Get()->GetAllGamepadsAttached();
-
-		if (controllersAttached.empty())
-			return;
-
-		float movementSpeed = mMovementSpeed;
-
-		// Check to see if the slow camera movement button is pressed (left bumper)
-		Input::GamepadInput::GamepadInputDevice* controller = (Input::GamepadInput::GamepadInputDevice*)controllersAttached[0];
-		if (controller)
-		{
-			// ----------------------------------------------- 
-
-			if (controller->QueryInput((unsigned int)Input::GamepadInput::Buttons::LEFT_BUMPER) == Input::ButtonInputState::HELD ||
-				controller->QueryInput((unsigned int)Input::GamepadInput::Buttons::LEFT_BUMPER) == Input::ButtonInputState::PRESSED)
-			{
-				movementSpeed = mMovementSpeed / 10.0f;
-			}
-
-			if (controller->QueryInput((unsigned int)Input::GamepadInput::Buttons::RIGHT_BUMPER) == Input::ButtonInputState::HELD ||
-				controller->QueryInput((unsigned int)Input::GamepadInput::Buttons::RIGHT_BUMPER) == Input::ButtonInputState::PRESSED)
-			{
-				movementSpeed = mMovementSpeed * 10.0f;
-			}
-
-			// -----------------------------------------------
-
-			Maths::Vector::Vector2D<float> moveDirection = { controller->QueryAxis((unsigned int)Input::GamepadInput::Axis::LEFT_X), controller->QueryAxis((unsigned int)Input::GamepadInput::Axis::LEFT_Y) };
-
-			mPosition -= mRight   *  moveDirection.x * deltaTime * movementSpeed;
-			mPosition -= mForward *  moveDirection.y * deltaTime * movementSpeed;
-
-			if (controller->QueryAxis((unsigned int)Input::GamepadInput::Axis::RIGHT_TRIGGER) > 0.05f)
-			{
-				mPosition += Maths::Vector::Vector3D<float>(0.0f, 1.0f, 0.0f) * deltaTime * movementSpeed;
-			}
-			else if (controller->QueryAxis((unsigned int)Input::GamepadInput::Axis::LEFT_TRIGGER) > 0.05f)
-			{
-				mPosition -= Maths::Vector::Vector3D<float>(0.0f, 1.0f, 0.0f) * deltaTime * movementSpeed;
-			}
-
-			// -----------------------------------------------
-
-			float lookSpeed   = 1.4f;
-			bool  lookChanged = false;
-
-			Maths::Vector::Vector2D<float> lookDirection = { controller->QueryAxis((unsigned int)Input::GamepadInput::Axis::RIGHT_X), controller->QueryAxis((unsigned int)Input::GamepadInput::Axis::RIGHT_Y) };
-
-			// If looking left/right
-			if (lookDirection.x != 0.0)
-			{
-				mAngleFromVertical -= deltaTime * lookDirection.x * lookSpeed;
-
-				lookChanged = true;
-			}
-				
-			// If looking up/down
-			if (lookDirection.y != 0.0f)
-			{
-				mAngleFromHorizonal -= deltaTime * lookDirection.y * lookSpeed;
-
-				lookChanged = true;
-			}
-
-			// Now calculate the new forward vector
-			if (lookChanged)
-			{
-				UpdateLookDirection();
-			}
-		}
 	}
 
 	// -------------------------------------------------------------------- //

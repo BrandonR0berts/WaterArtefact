@@ -5,8 +5,6 @@
 
 #include <glm/matrix.hpp>
 
-#include "Rendering/Code/RenderingResources/RenderingResources.h"
-
 #include "TextureSettings.h"
 
 #include <glad/glad.h>
@@ -15,11 +13,21 @@
 // This file contains definitions for Texture2D and Texture3D within the texture namespace
 namespace Rendering
 {
+	namespace Buffers
+	{
+		class VertexArrayObject;
+	}
+
+	namespace ShaderPrograms
+	{
+		class ShaderProgram;
+	}
+
 	namespace Texture
 	{
 		// ---------------------------------------------------
 
-		class Texture2D final : public Resource
+		class Texture2D final
 		{
 		public:
 			Texture2D();
@@ -127,28 +135,7 @@ namespace Rendering
 
 		// ---------------------------------------------------
 
-		class Texture3D final : public Resource
-		{
-		public:
-			Texture3D() 
-				: Resource()
-				, mTextureID(0)
-			{
-				//glGenTextures(1, &mTextureID);
-			}
-
-			~Texture3D()
-			{
-
-			}
-
-		private:
-			unsigned int mTextureID;
-		};
-
-		// ---------------------------------------------------
-
-		class CubeMapTexture final : public Resource
+		class CubeMapTexture final
 		{
 		public:
 			CubeMapTexture();
@@ -161,10 +148,10 @@ namespace Rendering
 			void            LoadInTextures(std::string filePaths[6], TextureMinMagFilters minMagFilters = TextureMinMagFilters(), TextureWrappingSettings wrapSettings = TextureWrappingSettings());
 
 			// Returns a new texture that has been convoluted
-			CubeMapTexture* ConvoluteTexture();
+			CubeMapTexture* ConvoluteTexture(Buffers::VertexArrayObject* cubeVAO);
 
 			// Convolutes this texture, but as it is roughness based the only blurred parts are the mip map levels
-			void            ConvoluteTexture_Roughness();
+			void            ConvoluteTexture_Roughness(Buffers::VertexArrayObject* cubeVAO);
 
 			void            SetTextureMinMagFilters(TextureMinMagFilters minMagFilters);
 			void            SetTextureWrappingSettings(TextureWrappingSettings settings);
@@ -180,6 +167,9 @@ namespace Rendering
 
 			unsigned int mWidth;
 			unsigned int mHeight;
+
+			static ShaderPrograms::ShaderProgram* mConvolutionShader;
+			static ShaderPrograms::ShaderProgram* mRoughnessConvolutionShader;
 		};
 
 		// ---------------------------------------------------

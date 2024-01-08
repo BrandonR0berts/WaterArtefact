@@ -61,17 +61,26 @@
     <Filter Include="Source Files\Framebuffer">
       <UniqueIdentifier>{34f40839-20db-4815-b790-c7cb90d6e3f0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders\Definitions">
-      <UniqueIdentifier>{ba3f78fe-6505-4791-a3e8-f4ff56c4dfe1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Skybox">
       <UniqueIdentifier>{61dfbdab-e53c-414e-b7a5-1fa3ec7bab53}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Skybox">
       <UniqueIdentifier>{9746e6da-9a03-4808-b60d-27b0a31035b9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Convolution">
+      <UniqueIdentifier>{40fb3054-e4f2-47b3-a238-c2e2167298cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Convolution\Roughness">
+      <UniqueIdentifier>{64006811-430a-4c1b-b9c6-ba94fee0c6a5}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Shaders\Skybox">
-      <UniqueIdentifier>{9a2ce393-134c-4d5d-8d9e-9d51fff8a4a1}</UniqueIdentifier>
+      <UniqueIdentifier>{ee49766e-a9d7-428f-b68b-e5038561b3c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Compute">
+      <UniqueIdentifier>{8c7af56b-4eb9-4382-9029-c6e4abae57e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\UI">
+      <UniqueIdentifier>{bde817b0-e6bd-4ace-92ee-f502a00e515a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -82,12 +91,6 @@
       <Filter>Header Files\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Code\Shaders\ShaderProgram.h">
-      <Filter>Header Files\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Shaders\ShaderStore.h">
-      <Filter>Header Files\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Shaders\ShaderTypes.h">
       <Filter>Header Files\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Code\Textures\Texture.h">
@@ -147,8 +150,8 @@
     <ClInclude Include="Code\OpenGLRenderPipeline.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Code\AssertMsg.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\Shaders\ShaderTypes.h">
+      <Filter>Header Files\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -162,9 +165,6 @@
       <Filter>Source Files\Texture</Filter>
     </ClCompile>
     <ClCompile Include="Code\Window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Shaders\ShaderStore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Code\Camera.cpp">
@@ -197,12 +197,6 @@
     <ClCompile Include="Code\LightCollection.cpp">
       <Filter>Source Files\Lights</Filter>
     </ClCompile>
-    <ClCompile Include="Code\ColourTableCollection.cpp">
-      <Filter>Source Files\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\RenderModelsCollection.cpp">
-      <Filter>Source Files\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Code\RenderPipeline.cpp">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
@@ -217,26 +211,29 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\ProjectCube\Shaders\Vertex\VertexShaders.json">
-      <Filter>Shaders\Definitions</Filter>
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\ConvoluteCubeMap_Reflections.vert">
+      <Filter>Shaders\Convolution\Roughness</Filter>
     </None>
-    <None Include="..\ProjectCube\Shaders\Programs\ShaderPrograms.json">
-      <Filter>Shaders\Definitions</Filter>
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap_Reflections.frag">
+      <Filter>Shaders\Convolution\Roughness</Filter>
     </None>
-    <None Include="..\ProjectCube\Shaders\Geometry\GeometryShaders.json">
-      <Filter>Shaders\Definitions</Filter>
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap.frag">
+      <Filter>Shaders\Convolution</Filter>
     </None>
-    <None Include="..\ProjectCube\Shaders\Fragment\FragmentShaders.json">
-      <Filter>Shaders\Definitions</Filter>
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\ConvoluteCubeMap.vert">
+      <Filter>Shaders\Convolution</Filter>
     </None>
-    <None Include="..\ProjectCube\Shaders\Compute\ComputeShaders.json">
-      <Filter>Shaders\Definitions</Filter>
-    </None>
-    <None Include="..\ProjectCube\Shaders\Fragment\Skybox.frag">
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\Skybox.vert">
       <Filter>Shaders\Skybox</Filter>
     </None>
-    <None Include="..\ProjectCube\Shaders\Vertex\Skybox.vert">
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\Skybox.frag">
       <Filter>Shaders\Skybox</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\Sprite.frag">
+      <Filter>Shaders\UI</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\Sprite.vert">
+      <Filter>Shaders\UI</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -1,10 +1,23 @@
 #pragma once
 
 #include "RenderPipeline.h"
+
 #include <mutex>
+#include <glad/glad.h>
 
 namespace Rendering
 {
+	namespace Buffers
+	{
+		class VertexArrayObject;
+		class VertexBufferObject;
+	}
+
+	namespace ShaderPrograms
+	{
+		class ShaderProgram;
+	}
+
 	// This is the main game render flow, which hooks into the current level to grab the data about what should be being rendered
 	class OpenGLRenderPipeline final : public RenderPipeline
 	{
@@ -47,8 +60,6 @@ namespace Rendering
 		// -------------------------------------------- //
 
 	private:
-		// -------------------
-
 		std::vector<std::pair<GLenum, unsigned int>> mTextureUnitBindings;
 		unsigned int                                 mShaderIDBound;
 
@@ -62,6 +73,11 @@ namespace Rendering
 
 		bool                                         mBackFaceCullingEnabled;
 
+		ShaderPrograms::ShaderProgram*               mFinalRenderProgram;
+
+		Buffers::VertexArrayObject*                  mVAOVideo;
+		Buffers::VertexBufferObject*                 mVBOVideo;
+
 		// ---------------------------------------------------------------- //
 
 		std::string ConvertTextureBindingToString(GLenum bindingPoint);
@@ -69,6 +85,7 @@ namespace Rendering
 		// ---------------------------------------------------------------- //
 
 		void FinalRenderToScreen();		
+		void SetupShaders();
 
 		// -------------------------------------------- //
 

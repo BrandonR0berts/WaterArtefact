@@ -42,6 +42,9 @@
     <ClInclude Include="Code\Timer.h">
       <Filter>Timer</Filter>
     </ClInclude>
+    <ClInclude Include="Code\AssertMsg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">

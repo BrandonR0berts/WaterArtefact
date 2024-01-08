@@ -123,36 +123,11 @@ namespace Rendering
 
 	private:
 		void HandlePCInput(const float deltaTime);
-		void HandleControllerInput(const float deltaTime);
 
 		void UpdateLookDirection();
 
 		float mAngleFromVertical;  // Angle for left/right looking
 		float mAngleFromHorizonal; // Angle for up/down looking
-	};
-
-	// -------------------------------------------------------------
-
-	class FirstPersonCamera final : public Camera
-	{
-	public:
-		FirstPersonCamera();
-		~FirstPersonCamera();
-
-	private:
-	};
-
-	// -------------------------------------------------------------
-
-	class ThirdPersonCamera final : public Camera
-	{
-	public:
-		ThirdPersonCamera();
-		~ThirdPersonCamera();
-
-	private:
-		Maths::Vector::Vector3D<float> mFocalPoint;
-		float                          mDistanceToFocalPoint;
 	};
 
 	// -------------------------------------------------------------

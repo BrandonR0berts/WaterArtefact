@@ -3,13 +3,14 @@
 #include "Rendering/Code/STB_Image/STB_ImageInit.h"
 #include "Rendering/Code/Window.h"
 #include "Rendering/Code/Shaders/ShaderProgram.h"
-#include "Rendering/Code/Shaders/ShaderStore.h"
 
 #include "Rendering/Code/RenderingResourceTracking.h"
 
 #include "Rendering/Code/Framebuffers.h"
 
 #include "Rendering/Code/OpenGLRenderPipeline.h"
+#include "Rendering/Code/Shaders/ShaderProgram.h"
+#include "Rendering/Code/Shaders/Shader.h"
 
 #include <iostream>
 
@@ -20,9 +21,7 @@ namespace Rendering
 		// ----------------------------------------------------------------------------------------------------------
 
 		Texture2D::Texture2D() 
-			: Resource()
-
-			, mFilePath("")
+			:  mFilePath("")
 			, mTextureID(0)
 			, mPBO(0)
 
@@ -573,6 +572,9 @@ namespace Rendering
 		// ----------------------------------------------------------------------------------------------------------
 		// ----------------------------------------------------------------------------------------------------------
 
+		ShaderPrograms::ShaderProgram* CubeMapTexture::mConvolutionShader          = nullptr;
+		ShaderPrograms::ShaderProgram* CubeMapTexture::mRoughnessConvolutionShader = nullptr;
+
 		glm::mat4 CubeMapTexture::mCaptureViews[] =
 		{
 		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
@@ -584,12 +586,43 @@ namespace Rendering
 		};
 
 		CubeMapTexture::CubeMapTexture()
-			: Resource()
-			, mTextureID(0)
+			: mTextureID(0)
 			, mWidth(0)
 			, mHeight(0)
 		{
 			glGenTextures(1, &mTextureID);
+
+			if (!mConvolutionShader)
+			{
+				mConvolutionShader = new ShaderPrograms::ShaderProgram();
+
+				Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/ConvoluteCubeMap.vert");
+				Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/ConvoluteCubeMap.frag");
+
+				mConvolutionShader->AttachShader(vertexShader);
+				mConvolutionShader->AttachShader(fragmentShader);
+
+				mConvolutionShader->LinkShadersToProgram();
+
+				delete vertexShader;
+				delete fragmentShader;
+			}
+
+			if (!mRoughnessConvolutionShader)
+			{
+				mRoughnessConvolutionShader = new ShaderPrograms::ShaderProgram();
+
+				Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/ConvoluteCubeMap_Reflections.vert");
+				Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/ConvoluteCubeMap_Reflections.frag");
+
+				mRoughnessConvolutionShader->AttachShader(vertexShader);
+				mRoughnessConvolutionShader->AttachShader(fragmentShader);
+
+				mRoughnessConvolutionShader->LinkShadersToProgram();
+
+				delete vertexShader;
+				delete fragmentShader;
+			}
 		}
 
 		// ----------------------------------------------------------------------------------------------------------
@@ -600,9 +633,7 @@ namespace Rendering
 			mTextureID = 0;
 
 			// This assumes that all images in the cube map are of the same size
-#ifdef _DEBUG_BUILD
 			Rendering::TrackingData::AdjustGPUMemoryUsed(mWidth * mHeight * 3 * 6);
-#endif
 		}
 
 		// ----------------------------------------------------------------------------------------------------------
@@ -642,9 +673,7 @@ namespace Rendering
 				{
 					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
-#ifdef _DEBUG_BUILD
 					Rendering::TrackingData::AdjustGPUMemoryUsed(width * height * 3);
-#endif
 
 					mHeight = height;
 					mWidth  = width;
@@ -669,95 +698,72 @@ namespace Rendering
 
 		// ----------------------------------------------------------------------------------------------------------
 
-		CubeMapTexture* CubeMapTexture::ConvoluteTexture()
+		CubeMapTexture* CubeMapTexture::ConvoluteTexture(Buffers::VertexArrayObject* cubeVAO)
 		{
 			OpenGLRenderPipeline* renderPipeline = (OpenGLRenderPipeline*)Window::GetRenderPipeline();
 
-			if (!renderPipeline)
+			if (!renderPipeline || !mConvolutionShader)
 				return nullptr;
-
-			ShaderPrograms::ShaderProgram* convolutionShader = nullptr;
-
-			if (Window::GetShaderStore().GetShaderProgram(ShaderProgramTypes::ConvoluteCubeMap_Program, convolutionShader))
-			{
-				// ----
+			
+			// ----
 				 
-				// Create the output cubemap
-				CubeMapTexture* newCubemap = new CubeMapTexture();
+			// Create the output cubemap
+			CubeMapTexture* newCubemap = new CubeMapTexture();
 
-				newCubemap->SetupInteralData(32, 32, GL_FLOAT, GL_RGB16F, GL_RGB, { GL_LINEAR, GL_LINEAR }, { GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
+			newCubemap->SetupInteralData(32, 32, GL_FLOAT, GL_RGB16F, GL_RGB, { GL_LINEAR, GL_LINEAR }, { GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
 
-				// ----
+			// ----
 
-				convolutionShader->UseProgram();
+			mConvolutionShader->UseProgram();
 
-				convolutionShader->SetInt("environmentMap", 0);
+			mConvolutionShader->SetInt("environmentMap", 0);
 
-				glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-				convolutionShader->SetMat4("projectionMatrix", &projectionMatrix[0][0]);
+			glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+			mConvolutionShader->SetMat4("projectionMatrix", &projectionMatrix[0][0]);
 
-				// Bind this cubemap to the active texture ID
-				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mTextureID, false);
+			// Bind this cubemap to the active texture ID
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mTextureID, false);
 
-				// Set the viewport to the right size for the texture
-				glViewport(0, 0, 32, 32);
+			// Set the viewport to the right size for the texture
+			glViewport(0, 0, 32, 32);
 
-				Framebuffer* FBO = new Framebuffer();
-				FBO->SetActive(true, true);
+			Framebuffer* FBO = new Framebuffer();
+			FBO->SetActive(true, true);
 
-				// Grab a cube VAO
-				Buffers::VertexArrayObject* cubeVAO = Window::GetBufferStore().GetVAO("CubeDataVAO");
+			cubeVAO->Bind();
 
-				cubeVAO->Bind();
+			// Loop through each face
+			for (unsigned int i = 0; i < 6; i++)
+			{
+				mConvolutionShader->SetMat4("viewMatrix", &mCaptureViews[i][0][0]);
 
-				// Loop through each face
-				for (unsigned int i = 0; i < 6; i++)
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, newCubemap->GetTextureID(), 0);
+
+				GLenum error = glGetError();
+				if (error != 0)
 				{
-					convolutionShader->SetMat4("viewMatrix", &mCaptureViews[i][0][0]);
-
-					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, newCubemap->GetTextureID(), 0);
-
-					GLenum error = glGetError();
-					if (error != 0)
-					{
-						std::cout << "we have problems";
-					}
-
-					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-					// Render the cube
-					glDrawArrays(GL_TRIANGLES, 0, 36);
+					std::cout << "we have problems";
 				}
 
-				// ----
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				FBO->SetActive(false, true);
-				delete FBO;
-
-				cubeVAO->Unbind();
-
-				// ----
-
-#ifdef _DEBUG_BUILD
-				std::string newResourceName = "Convoluted_" + mName;
-				newCubemap->SetName(newResourceName);
-#else
-				std::string newResourceName = "Convoluted_" + std::to_string(mHashedName);
-				newCubemap->SetHashedName(Engine::StringHash::Hash(newResourceName));
-#endif
-				Window::GetResourceCollection().AddResource(ResourceType::CubeMap, newResourceName, newCubemap);
-
-				// Reset the viewport to the screen size
-				glViewport(0, 0, Window::GetWindowWidth(), Window::GetWindowHeight());
-
-				return newCubemap;
-			}
-			else
-			{
-				ASSERTFAIL("Failed to grab the convolution shader - no cubemap generated");
+				// Render the cube
+				glDrawArrays(GL_TRIANGLES, 0, 36);
 			}
 
-			return nullptr;
+			// ----
+
+			FBO->SetActive(false, true);
+			delete FBO;
+
+			cubeVAO->Unbind();
+
+			// ----
+
+			// Reset the viewport to the screen size
+			glViewport(0, 0, Window::GetWindowWidth(), Window::GetWindowHeight());
+
+			return newCubemap;
 		}
 
 		// ----------------------------------------------------------------------------------------------------------
@@ -803,80 +809,74 @@ namespace Rendering
 
 		// ----------------------------------------------------------------------------------------------------------
 
-		void CubeMapTexture::ConvoluteTexture_Roughness()
+		void CubeMapTexture::ConvoluteTexture_Roughness(Buffers::VertexArrayObject* cubeVAO)
 		{
 			OpenGLRenderPipeline* renderPipeline = (OpenGLRenderPipeline*)Window::GetRenderPipeline();
 
-			if (!renderPipeline)
+			if (!renderPipeline || !mRoughnessConvolutionShader)
 				return;
+			
+			// Set the texture to convolute
+			mRoughnessConvolutionShader->UseProgram();
 
-			ShaderPrograms::ShaderProgram* convolutionShader = nullptr;
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mTextureID, false);
 
-			if (Window::GetShaderStore().GetShaderProgram(ShaderProgramTypes::ConvoluteCubeMap_Reflections_Program, convolutionShader))
+			mRoughnessConvolutionShader->SetInt("environmentMap", 0);
+
+			// Set the projection matrix
+			glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+			mRoughnessConvolutionShader->SetMat4("projectionMatrix", &projectionMatrix[0][0]);
+
+			// Now loop through each mip map layer
+			unsigned int mipMapLevels = 5;
+
+			// Grab the cube VAO
+			cubeVAO->Bind();
+
+			Framebuffer  FBO = Framebuffer();
+			RenderBuffer RBO = RenderBuffer();
+
+			FBO.SetActive(true, true);
+
+			RBO.SetStorageData(GL_DEPTH_COMPONENT24, 128, 128);
+			FBO.AssignRenderBuffer(&RBO, GL_DEPTH_ATTACHMENT);
+
+			for (unsigned int mipLevel = 0; mipLevel < mipMapLevels; mipLevel++)
 			{
-				// Set the texture to convolute
-				convolutionShader->UseProgram();
+				// Calculate the texture size of this mip level
+				unsigned int textureWidth  = (unsigned int)((double)mWidth  * std::pow(0.5f, mipLevel));
+				unsigned int textureHeight = (unsigned int)((double)mHeight * std::pow(0.5f, mipLevel));
 
-				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mTextureID, false);
+				RBO.Bind();
+				RBO.SetStorageData(GL_DEPTH_COMPONENT24, textureWidth, textureHeight);
 
-				convolutionShader->SetInt("environmentMap", 0);
+				// Now set the viewport
+				glViewport(0, 0, textureWidth, textureHeight);
 
-				// Set the projection matrix
-				glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-				convolutionShader->SetMat4("projectionMatrix", &projectionMatrix[0][0]);
+				// Calculate the roughness value for this level and set in the shader
+				float roughness = (float)mipLevel / (float)(mipMapLevels - 1);
+				mRoughnessConvolutionShader->SetFloat("roughness", roughness);
 
-				// Now loop through each mip map layer
-				unsigned int mipMapLevels = 5;
-
-				// Grab the cube VAO
-				Buffers::VertexArrayObject* cubeVAO = Window::GetBufferStore().GetVAO("CubeDataVAO");
-				cubeVAO->Bind();
-
-				Framebuffer  FBO = Framebuffer();
-				RenderBuffer RBO = RenderBuffer();
-
-				FBO.SetActive(true, true);
-
-				RBO.SetStorageData(GL_DEPTH_COMPONENT24, 128, 128);
-				FBO.AssignRenderBuffer(&RBO, GL_DEPTH_ATTACHMENT);
-
-				for (unsigned int mipLevel = 0; mipLevel < mipMapLevels; mipLevel++)
+				// Loop through all 6 faces
+				for (unsigned int j = 0; j < 6; j++)
 				{
-					// Calculate the texture size of this mip level
-					unsigned int textureWidth  = (unsigned int)((double)mWidth  * std::pow(0.5f, mipLevel));
-					unsigned int textureHeight = (unsigned int)((double)mHeight * std::pow(0.5f, mipLevel));
+					// Set the view matrix
+					mRoughnessConvolutionShader->SetMat4("viewMatrix", &mCaptureViews[j][0][0]);
 
-					RBO.Bind();
-					RBO.SetStorageData(GL_DEPTH_COMPONENT24, textureWidth, textureHeight);
+					// Bind the texture to the framebuffer
+					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + j, mTextureID, mipLevel);
 
-					// Now set the viewport
-					glViewport(0, 0, textureWidth, textureHeight);
+					// Clear the existing data
+					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-					// Calculate the roughness value for this level and set in the shader
-					float roughness = (float)mipLevel / (float)(mipMapLevels - 1);
-					convolutionShader->SetFloat("roughness", roughness);
-
-					// Loop through all 6 faces
-					for (unsigned int j = 0; j < 6; j++)
-					{
-						// Set the view matrix
-						convolutionShader->SetMat4("viewMatrix", &mCaptureViews[j][0][0]);
-
-						// Bind the texture to the framebuffer
-						glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + j, mTextureID, mipLevel);
-
-						// Clear the existing data
-						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-						// Draw the cube
-						glDrawArrays(GL_TRIANGLES, 0, 36);
-					}
+					// Draw the cube
+					glDrawArrays(GL_TRIANGLES, 0, 36);
 				}
-
-				FBO.SetActive(false, true);
-
-				cubeVAO->Unbind();
 			}
+
+			FBO.SetActive(false, true);
+
+			cubeVAO->Unbind();
 
 			// Reset the viewport
 			glViewport(0, 0, Window::GetWindowWidth(), Window::GetWindowHeight());

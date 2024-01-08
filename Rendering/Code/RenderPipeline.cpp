@@ -53,57 +53,13 @@ namespace Rendering
 									   Maths::Vector::Vector3D<float>(0.0f, 0.0f, 1.0f));
 
 		SetupUsefulVBOData();
-		
-		// ------------------------------------
-
-		std::vector<Rendering::Buffers::AttributePointerData> VAODataSetup;
-
-		VAODataSetup.push_back(Buffers::AttributePointerData(0, 4, GL_FLOAT, false, 4 * sizeof(GL_FLOAT), 0, true, "VBO_full_FBO"));
-
-		Window::GetBufferStore().CreateVAO("VAO_full_FBO", VAODataSetup);
-
-		// ------------------------------------
-
-		// Create empty texture for use when we dont have a real texture to bind, but still want the shaders to work
-		Texture::Texture2D* emptyTexture = new Texture::Texture2D();
-		unsigned char       emptyData[]  = { 255, 255, 255 };
-		emptyTexture->InitWithData(1, 1, emptyData, false);
-
-		std::string         emptyTextureName = "Empty";
-		Rendering::Window::GetResourceCollection().AddResource(Rendering::ResourceType::Texture2D, emptyTextureName, emptyTexture);
-
-		// ------------------------------------
 	}
 
 	// ---------------------------------------
 
 	void RenderPipeline::SetupUsefulVBOData()
 	{
-		// ----
 
-		static float renderingData[24] = { -1.0f, 1.0f, 0.0f, 1.0f,
-										   -1.0f, -1.0f, 0.0f, 0.0f,
-										    1.0f, -1.0f, 1.0f, 0.0f,
-
-										   -1.0f, 1.0f, 0.0f, 1.0f,
-											1.0f, -1.0f, 1.0f, 0.0f,
-										    1.0f, 1.0f, 1.0f, 1.0f };
-
-		Window::GetBufferStore().CreateVBO(renderingData, 96, GL_STATIC_DRAW, "VBO_Video");
-
-		// ----
-
-		static float renderingDataFBO[24] = { -1.0f, -1.0f, 0.0f, 0.0f,
-										      -1.0f,  1.0f, 0.0f, 1.0f,
-										       1.0f,  1.0f, 1.0f, 1.0f,
-
-										       1.0f,  1.0f, 1.0f, 1.0f,
-										       1.0f, -1.0f, 1.0f, 0.0f,
-										      -1.0f, -1.0f, 0.0f, 0.0f };
-
-		Window::GetBufferStore().CreateVBO(renderingDataFBO, 96, GL_STATIC_DRAW, "VBO_full_FBO");
-
-		// ----
 	}
 
 	// -------------------------------------------------
@@ -145,15 +101,20 @@ namespace Rendering
 		{
 			mFinalRenderFBO->SetActive(true, true);
 
-			Texture::Texture2D* colourBuffer = (Texture::Texture2D*)Window::GetResourceCollection().GetResource(Rendering::ResourceType::Texture2D, "FinalRenderbufferColourTexture");
+			Texture::Texture2D* colourBuffer = new Texture::Texture2D();
 
 			if (colourBuffer)
+			{
+				colourBuffer->InitEmpty(mScreenWidth, mScreenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
 				mFinalRenderFBO->AttachColourBuffer(colourBuffer);
+			}
 
-			Texture::Texture2D* depthBuffer = (Texture::Texture2D*)Window::GetResourceCollection().GetResource(Rendering::ResourceType::Texture2D, "FinalRenderbufferDepthTexture");
-
+			Texture::Texture2D* depthBuffer = new Texture::Texture2D();
 			if (depthBuffer)
+			{
+				depthBuffer->InitEmpty(mScreenWidth, mScreenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
 				mFinalRenderFBO->AttachDepthBuffer(depthBuffer);
+			}
 
 			mFinalRenderFBO->CheckComplete();
 		}

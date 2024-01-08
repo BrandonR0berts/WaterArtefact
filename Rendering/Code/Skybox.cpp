@@ -1,10 +1,10 @@
 #include "Skybox.h"
 
 #include "Window.h"
-#include "RenderingResources/RenderingResources.h"
-#include "Shaders/ShaderStore.h"
 
 #include "OpenGLRenderPipeline.h"
+#include "Shaders/Shader.h"
+#include "Shaders/ShaderProgram.h"
 
 #include "Camera.h"
 
@@ -60,17 +60,20 @@ namespace Rendering
 		, mInternalName("Skybox_Cubemap_" + name)
 		, mName(name)
 		, mCubeVAO(nullptr)
+		, mSkyBoxProgram(nullptr)
 		, mShowingIrradianceMap(false)
 	{
 		LoadCubeMapTextures(mFilePaths);
 
 		if (!mCubeVAO)
 		{
-			mCubeVAO = Window::GetBufferStore().GetVAO("CubeDataVAO");
+			mCubeVAO = new Buffers::VertexArrayObject();
 
 			if (!mCubeVAO)
 				SetupBufferData();
 		}
+
+		SetupShaders();
 	}
 
 	// -----------------------------------------
@@ -86,11 +89,13 @@ namespace Rendering
 
 		if (!mCubeVAO)
 		{
-			mCubeVAO = Window::GetBufferStore().GetVAO("CubeDataVAO");
+			mCubeVAO = new Buffers::VertexArrayObject();
 
 			if (!mCubeVAO)
 				SetupBufferData();
 		}
+
+		SetupShaders();
 	}
 
 	// -----------------------------------------
@@ -98,8 +103,8 @@ namespace Rendering
 	Skybox::~Skybox()
 	{
 		// Clear up the cubemap resources used
-		Window::GetResourceCollection().RemoveResource(Rendering::ResourceType::CubeMap, mCubeMapTexture);
-		Window::GetResourceCollection().RemoveResource(Rendering::ResourceType::CubeMap, mConvolutedVersion);
+		delete mCubeMapTexture;
+		delete mConvolutedVersion;
 
 		mCubeMapTexture    = nullptr;
 		mConvolutedVersion = nullptr;
@@ -107,14 +112,35 @@ namespace Rendering
 
 	// -----------------------------------------
 
+	void Skybox::SetupShaders()
+	{
+		if (!mSkyBoxProgram)
+		{
+			mSkyBoxProgram = new ShaderPrograms::ShaderProgram();
+
+			Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/Skybox.vert");
+			Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/Skybox.frag");
+
+			mSkyBoxProgram->AttachShader(vertexShader);
+			mSkyBoxProgram->AttachShader(fragmentShader);
+
+			mSkyBoxProgram->LinkShadersToProgram();
+
+			delete vertexShader;
+			delete fragmentShader;
+		}
+	}
+
+	// -----------------------------------------
+
 	void Skybox::SetupBufferData()
 	{
-		Window::GetBufferStore().CreateVBO(mCubeData, sizeof(Maths::Vector::Vector3D<float>) * 36, GL_STATIC_DRAW, "VBO_CubeData");
+		// Create the VBO and set its data
+		mCubeVBO = new Buffers::VertexBufferObject();
+		mCubeVBO->SetBufferData(mCubeData, sizeof(Maths::Vector::Vector3D<float>) * 36, GL_STATIC_DRAW);
 
-		std::vector<Rendering::Buffers::AttributePointerData> VAODataSetup;
-		VAODataSetup.push_back(Buffers::AttributePointerData(0, 3, GL_FLOAT, false, 3 * sizeof(GL_FLOAT), 0, true, "VBO_CubeData"));
-
-		Window::GetBufferStore().CreateVAO("CubeDataVAO", VAODataSetup);
+		// Setup the vao
+		mCubeVAO->SetVertexAttributePointers(0, 3, GL_FLOAT, false, 3 * sizeof(GL_FLOAT), 0, true);
 	}
 
 	// -----------------------------------------
@@ -124,9 +150,6 @@ namespace Rendering
 		mCubeMapTexture = new Texture::CubeMapTexture();
 
 		mCubeMapTexture->LoadInTextures(filePaths);
-
-		// Add the resouce to the handler
-		Window::GetResourceCollection().AddResource(Rendering::ResourceType::CubeMap, mInternalName, mCubeMapTexture);
 	}
 
 	// -----------------------------------------
@@ -146,59 +169,49 @@ namespace Rendering
 		{
 			// This is used within the PBR irradiance mapping to give the illusion of global illumination
 			// It is essentially a blurred version
-			mConvolutedVersion = mCubeMapTexture->ConvoluteTexture();
+			mConvolutedVersion = mCubeMapTexture->ConvoluteTexture(mCubeVAO);
 		}
 
-		if (!mCubeVAO)
-		{
-			mCubeVAO = Window::GetBufferStore().GetVAO("CubeDataVAO");
-		}
-
-		if (!mCubeMapTexture || !camera || !mCubeVAO)
+		if (!mCubeMapTexture || !camera || !mCubeVAO || !mSkyBoxProgram)
 			return;
 
-		// Get the shaders we are going to use for this render
-		ShaderPrograms::ShaderProgram* program;
-		if (Window::GetShaderStore().GetShaderProgram(ShaderProgramTypes::Skybox_Program, program))
+		mCubeVAO->Bind();
+
+		mSkyBoxProgram->UseProgram();
+
+		// Allow the early out depth test to work
+		renderPipeline->SetDepthTestFunction(GL_LEQUAL);
+
+		// Bind the cube map
+		mSkyBoxProgram->SetInt("skyboxImage", 0);
+
+		glm::mat4 view = glm::mat4(glm::mat3(camera->GetViewMatrix()));
+		mSkyBoxProgram->SetMat4("viewMat", &view[0][0]);
+
+		glm::mat4 projection = camera->GetPerspectiveMatrix();
+		mSkyBoxProgram->SetMat4("projectionMat", &projection[0][0]);
+
+		if (textureToReplaceSkybox)
 		{
-			mCubeVAO->Bind();
-
-			program->UseProgram();
-
-			// Allow the early out depth test to work
-			renderPipeline->SetDepthTestFunction(GL_LEQUAL);
-
-			// Bind the cube map
-			program->SetInt("skyboxImage", 0);
-
-			glm::mat4 view = glm::mat4(glm::mat3(camera->GetViewMatrix()));
-			program->SetMat4("viewMat", &view[0][0]);
-
-			glm::mat4 projection = camera->GetPerspectiveMatrix();
-			program->SetMat4("projectionMat", &projection[0][0]);
-
-			if (textureToReplaceSkybox)
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, textureToReplaceSkybox->GetTextureID(), false);
+		}
+		else
+		{
+			if (mShowingIrradianceMap && mConvolutedVersion)
 			{
-				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, textureToReplaceSkybox->GetTextureID(), false);
+				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mConvolutedVersion->GetTextureID(), false);
 			}
 			else
 			{
-				if (mShowingIrradianceMap && mConvolutedVersion)
-				{
-					renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mConvolutedVersion->GetTextureID(), false);
-				}
-				else
-				{
-					renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mCubeMapTexture->GetTextureID(), false);
-				}
+				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mCubeMapTexture->GetTextureID(), false);
 			}
-
-			// Draw
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-
-			// Reset depth func back to default
-			renderPipeline->SetDepthTestFunction(GL_LESS);
 		}
+
+		// Draw
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// Reset depth func back to default
+		renderPipeline->SetDepthTestFunction(GL_LESS);
 	}
 
 	// -----------------------------------------
@@ -213,55 +226,45 @@ namespace Rendering
 		renderPipeline->SetAlphaBlending(false);
 		renderPipeline->SetBackFaceCulling(false);
 
-		if (!mCubeVAO)
-		{
-			mCubeVAO = Window::GetBufferStore().GetVAO("CubeDataVAO");
-		}
-
-		if (!mCubeMapTexture || !mCubeVAO)
+		if (!mCubeMapTexture || !mCubeVAO || !mSkyBoxProgram)
 			return;
 
-		// Get the shaders we are going to use for this render
-		ShaderPrograms::ShaderProgram* program;
-		if (Window::GetShaderStore().GetShaderProgram(ShaderProgramTypes::Skybox_Program, program))
+		mCubeVAO->Bind();
+
+		mSkyBoxProgram->UseProgram();
+
+		// Allow the early out depth test to work
+		renderPipeline->SetDepthTestFunction(GL_LEQUAL);
+
+		// Bind the cube map
+		mSkyBoxProgram->SetInt("skyboxImage", 0);
+
+		glm::mat4 view = glm::mat4(glm::mat3(viewMatrix));
+		mSkyBoxProgram->SetMat4("viewMat", &view[0][0]);
+
+		mSkyBoxProgram->SetMat4("projectionMat", &projectionMatrix[0][0]);
+
+		if (textureToReplaceSkybox)
 		{
-			mCubeVAO->Bind();
-
-			program->UseProgram();
-
-			// Allow the early out depth test to work
-			renderPipeline->SetDepthTestFunction(GL_LEQUAL);
-
-			// Bind the cube map
-			program->SetInt("skyboxImage", 0);
-
-			glm::mat4 view = glm::mat4(glm::mat3(viewMatrix));
-			program->SetMat4("viewMat", &view[0][0]);
-
-			program->SetMat4("projectionMat", &projectionMatrix[0][0]);
-
-			if (textureToReplaceSkybox)
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, textureToReplaceSkybox->GetTextureID(), false);
+		}
+		else
+		{
+			if (mShowingIrradianceMap && mConvolutedVersion)
 			{
-				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, textureToReplaceSkybox->GetTextureID(), false);
+				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mConvolutedVersion->GetTextureID(), false);
 			}
 			else
 			{
-				if (mShowingIrradianceMap && mConvolutedVersion)
-				{
-					renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mConvolutedVersion->GetTextureID(), false);
-				}
-				else
-				{
-					renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mCubeMapTexture->GetTextureID(), false);
-				}
+				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mCubeMapTexture->GetTextureID(), false);
 			}
-
-			// Draw
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-
-			// Reset depth func back to default
-			renderPipeline->SetDepthTestFunction(GL_LESS);
 		}
+
+		// Draw
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// Reset depth func back to default
+		renderPipeline->SetDepthTestFunction(GL_LESS);
 	}
 
 	// -----------------------------------------
@@ -272,7 +275,7 @@ namespace Rendering
 		{
 			// This is used within the PBR irradiance mapping to give the illusion of global illumination
 			// It is essentially a blurred version
-			mConvolutedVersion = mCubeMapTexture->ConvoluteTexture();
+			mConvolutedVersion = mCubeMapTexture->ConvoluteTexture(mCubeVAO);
 		}
 	}
 

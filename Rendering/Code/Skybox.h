@@ -2,7 +2,7 @@
 
 #include "Textures/Texture.h"
 #include "Maths/Code/Vector.h"
-#include "BufferStore.h"
+#include "Rendering/Code/Buffers.h"
 
 #include <string>
 
@@ -39,6 +39,8 @@ namespace Rendering
 
 	private:
 
+		void SetupShaders();
+
 		static Maths::Vector::Vector3D<float> mCubeData[36];
 
 		void LoadCubeMapTextures(std::string filePaths[6]);
@@ -53,6 +55,9 @@ namespace Rendering
 		std::string              mInternalName;
 
 		Buffers::VertexArrayObject* mCubeVAO;
+		ShaderPrograms::ShaderProgram* mSkyBoxProgram;
+
+		Buffers::VertexBufferObject* mCubeVBO;
 
 		bool mShowingIrradianceMap;
 	};

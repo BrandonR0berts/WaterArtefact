@@ -1,12 +1,5 @@
 #include "Window.h"
 
-#include <iostream>
-#include <thread>
-
-#include "Rendering/Code/Shaders/ShaderStore.h"
-
-#include "Maths/Code/Vector.h"
-
 #include "Camera.h"
 #include "Textures/Texture.h"
 
@@ -14,26 +7,24 @@
 #include "Include/imgui/imgui_impl_glfw.h"
 #include "Include/imgui/imgui_impl_opengl3.h"
 
-#include "Rendering/Code/RenderingResourceTracking.h"
-
 #include "Maths/Code/PerformanceAnalysis.h"
-
-#include "Maths/Code/Random.h"
 
 #include "Rendering/Code/OpenGLRenderPipeline.h"
 
-#include "Input/Code/Input.h"
 #include "Input/Code/KeyboardInput.h"
 #include "Input/Code/MouseInput.h"
+
+#include "Framebuffers.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <iostream>
+#include <thread>
+
 namespace Rendering
 {
 	// -------------------------------------------------
-
-	ShaderStore          Window::mShaderStore                   = ShaderStore();
 
 	bool                 Window::mInitialised                   = false;
 	bool                 Window::sWindowBeingResized            = false;
@@ -55,6 +46,9 @@ namespace Rendering
 		: mIsVsyncOn(true)
 		, mWindowShouldClose(false)
 		, mOldTime(0.0)
+		, mColourTexture(nullptr)
+		, mDepthTexture(nullptr)
+		, mFinalRenderFBO(nullptr)
 		, mDisplayCameraDebugInfo(false)
 	{		
 		// Kick off the render thread
@@ -367,7 +361,7 @@ namespace Rendering
 		sRenderPipeline->SetupGLFW();
 		sRenderPipeline->Init();
 
-		SetupShaders();
+		SetupFinalRenderFBO();
 
 		sRenderPipeline->SetupImGui();
 		sDebugToggleTimer.Start();
@@ -379,7 +373,6 @@ namespace Rendering
 
 		sRenderPipeline->ShutdownImGui();
 
-		ClearShaders();
 		ShutdownGLFW();
 
 		delete sRenderPipeline;
@@ -388,42 +381,20 @@ namespace Rendering
 
 	// -------------------------------------------------
 
-	void Window::ClearShaders()
-	{
-		mShaderStore.Clear();
-	}
-
-	// -------------------------------------------------
-
 	void Window::SetupFinalRenderFBO()
 	{
-
-
-		mBufferStore.CreateFBO("FinalRender_FBO");
+		mFinalRenderFBO = new Framebuffer();
 
 		unsigned int screenWidth  = sRenderPipeline->GetScreenWidth();
 		unsigned int screenHeight = sRenderPipeline->GetScreenHeight();
 
 		// Colour buffer
-		std::string         colourTextureName = "FinalRenderbufferColourTexture";
-		Texture::Texture2D* colourTexture     = new Texture::Texture2D();
-		colourTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
-		mResourceCollection.AddResource(Rendering::ResourceType::Texture2D, colourTextureName, colourTexture);
+		mColourTexture = new Texture::Texture2D();
+		mColourTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
 
 		// Depth buffer
-		std::string         depthTextureName = "FinalRenderbufferDepthTexture";
-		Texture::Texture2D* depthTexture     = new Texture::Texture2D();
-		depthTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
-		mResourceCollection.AddResource(Rendering::ResourceType::Texture2D, depthTextureName, depthTexture);
-	}
-
-	// -------------------------------------------------
-
-	void Window::SetupShaders()
-	{
-		mShaderStore.Init();
-
-		SetupFinalRenderFBO();
+		Texture::Texture2D* mDepthTexture     = new Texture::Texture2D();
+		mDepthTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
 	}
 
 	// -------------------------------------------------	

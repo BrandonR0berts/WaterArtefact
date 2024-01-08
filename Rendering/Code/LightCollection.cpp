@@ -1,15 +1,13 @@
 #include "LightCollection.h"
 
-#ifdef _DEBUG_BUILD
-	#include "Include/imgui/imgui.h"
-	#include "Include/imgui/imgui_impl_glfw.h"
-	#include "Include/imgui/imgui_impl_opengl3.h"
+#include "Include/imgui/imgui.h"
+#include "Include/imgui/imgui_impl_glfw.h"
+#include "Include/imgui/imgui_impl_opengl3.h"
 
-	#include "Rendering/Code/RenderingResourceTracking.h"
-#endif
+#include "Rendering/Code/RenderingResourceTracking.h"
 
 #include "window.h"
-#include "Engine/Code/AssertMsg.h"
+#include "Maths/Code/AssertMsg.h"
 
 namespace Rendering
 {
@@ -20,13 +18,17 @@ namespace Rendering
 		, mPointLights()
 	{
 		// Create the SSBO that will be used to pass the light data to the ray tracer
-		Window::GetBufferStore().CreateSSBO(nullptr, 0, GL_STATIC_DRAW, "LightData_SSBO");
+		mLightSSBO = new Buffers::ShaderStorageBufferObject();
+		mLightSSBO->AllocateMemory(0, GL_STATIC_DRAW);
 	}
 
 	// -----------------------------------------------------
 
 	LightCollection::~LightCollection()
 	{
+		delete mLightSSBO;
+		mLightSSBO = nullptr;
+
 		//ClearAllLights();
 	}
 
@@ -183,10 +185,8 @@ namespace Rendering
 	// -----------------------------------------------------
 
 	void LightCollection::UpdateLightBufferData()
-	{
-		Buffers::ShaderStorageBufferObject* LightDataSSBO = Window::GetBufferStore().GetSSBO("LightData_SSBO");	
-
-		if (!LightDataSSBO)
+	{		
+		if (!mLightSSBO)
 		{
 			ASSERTFAIL("Light storage SSBO does not exist!");
 			return;
@@ -195,7 +195,7 @@ namespace Rendering
 		// ----------------------------------------------------------------
 
 		// Clear the existing memory
-		LightDataSSBO->ClearAllDataInBuffer(GL_STATIC_DRAW);
+		mLightSSBO->ClearAllDataInBuffer(GL_STATIC_DRAW);
 
 		// ----------------------------------------------------------------
 
@@ -260,7 +260,7 @@ namespace Rendering
 
 		// Pass the new buffer data to the GPU
 		unsigned int bufferLengthBytes = bufferLength * 4;
-		LightDataSSBO->SetBufferData((GLvoid*)newBufferData, bufferLengthBytes, GL_STATIC_DRAW);
+		mLightSSBO->SetBufferData((GLvoid*)newBufferData, bufferLengthBytes, GL_STATIC_DRAW);
 
 		// ----------------------------------------------------------------
 

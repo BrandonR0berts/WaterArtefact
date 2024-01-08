@@ -156,6 +156,11 @@
   <ItemGroup>
     <ClInclude Include="Code\Artefact.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Rendering\Rendering.vcxproj">
+      <Project>{98a03f9f-2317-490f-b58b-4f62d393c0b8}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
