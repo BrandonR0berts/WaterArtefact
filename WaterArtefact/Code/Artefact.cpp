@@ -28,4 +28,14 @@ namespace Artefact
 	}
 
 	// -----------------------------------------------------
+
+	bool ArtefactProgram::GetHasQuit()
+	{
+		if (!mRenderWindow)
+			return false;
+
+		return mRenderWindow->GetHasQuitWindow();
+	}
+
+	// -----------------------------------------------------
 }

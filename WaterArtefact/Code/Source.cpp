@@ -15,7 +15,7 @@ int main()
 	std::chrono::time_point<std::chrono::system_clock> now                = oldTime;
 	float                                              timeTillNextUpdate = 0.0f;
 
-	while (running && program)
+	while (running && !program->GetHasQuit())
 	{
 		now       = std::chrono::system_clock::now();
 		deltaTime = std::chrono::duration<float>(now - oldTime).count();
@@ -30,6 +30,8 @@ int main()
 			timeTillNextUpdate += kTimePerUpdate;
 		}
 	}
+
+	delete program;
 
 	return 0;
 }

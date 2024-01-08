@@ -17,6 +17,8 @@ namespace Artefact
 
 		void Update(const float deltaTime);
 
+		bool GetHasQuit();
+
 	private:
 		Rendering::Window* mRenderWindow;
 	};
