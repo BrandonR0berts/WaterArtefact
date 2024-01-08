@@ -46,9 +46,6 @@ namespace Rendering
 		: mIsVsyncOn(true)
 		, mWindowShouldClose(false)
 		, mOldTime(0.0)
-		, mColourTexture(nullptr)
-		, mDepthTexture(nullptr)
-		, mFinalRenderFBO(nullptr)
 		, mDisplayCameraDebugInfo(false)
 	{		
 		// Kick off the render thread
@@ -361,8 +358,6 @@ namespace Rendering
 		sRenderPipeline->SetupGLFW();
 		sRenderPipeline->Init();
 
-		SetupFinalRenderFBO();
-
 		sRenderPipeline->SetupImGui();
 		sDebugToggleTimer.Start();
 
@@ -377,24 +372,6 @@ namespace Rendering
 
 		delete sRenderPipeline;
 		sRenderPipeline = nullptr;
-	}
-
-	// -------------------------------------------------
-
-	void Window::SetupFinalRenderFBO()
-	{
-		mFinalRenderFBO = new Framebuffer();
-
-		unsigned int screenWidth  = sRenderPipeline->GetScreenWidth();
-		unsigned int screenHeight = sRenderPipeline->GetScreenHeight();
-
-		// Colour buffer
-		mColourTexture = new Texture::Texture2D();
-		mColourTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
-
-		// Depth buffer
-		Texture::Texture2D* mDepthTexture     = new Texture::Texture2D();
-		mDepthTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
 	}
 
 	// -------------------------------------------------	

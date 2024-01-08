@@ -164,13 +164,16 @@ namespace Rendering
 
 		mFinalRenderProgram = new ShaderPrograms::ShaderProgram();
 
-		Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/Sprite.vert");
-		Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/Sprite.frag");
+		Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/VideoVertexShader.vert");
+		Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/VideoFragmentShader.frag");
 
 		mFinalRenderProgram->AttachShader(vertexShader);
 		mFinalRenderProgram->AttachShader(fragmentShader);
 
 		mFinalRenderProgram->LinkShadersToProgram();
+
+		mFinalRenderProgram->DetachShader(vertexShader);
+		mFinalRenderProgram->DetachShader(fragmentShader);
 
 		delete vertexShader;
 		delete fragmentShader;
@@ -179,18 +182,25 @@ namespace Rendering
 
 		mVAOVideo = new Buffers::VertexArrayObject();
 		mVAOVideo->Bind();
-		mVAOVideo->SetVertexAttributePointers(0, 4, GL_FLOAT, false, 4 * sizeof(GL_FLOAT), 0, true);
-		mVAOVideo->Unbind();
 
-		mVBOVideo = new Buffers::VertexBufferObject();
-		static float renderingData[24] = { -1.0f, 1.0f, 0.0f, 1.0f,
-										   -1.0f, -1.0f, 0.0f, 0.0f,
-										    1.0f, -1.0f, 1.0f, 0.0f,
+			mVBOVideo = new Buffers::VertexBufferObject();
+			static float renderingData[24] = { -1.0f, 1.0f, 0.0f, 1.0f,
+											   -1.0f, -1.0f, 0.0f, 0.0f,
+												1.0f, -1.0f, 1.0f, 0.0f,
 
-										   -1.0f, 1.0f, 0.0f, 1.0f,
-											1.0f, -1.0f, 1.0f, 0.0f,
-										    1.0f, 1.0f, 1.0f, 1.0f };
-		mVBOVideo->SetBufferData(renderingData, 96, GL_STATIC_DRAW);
+											   -1.0f, 1.0f, 0.0f, 1.0f,
+												1.0f, -1.0f, 1.0f, 0.0f,
+												1.0f, 1.0f, 1.0f, 1.0f };
+
+			mVBOVideo->SetTarget(GL_ARRAY_BUFFER);
+			mVBOVideo->SetBufferData((void*)renderingData, 96, GL_STATIC_DRAW);
+
+			mVBOVideo->Bind();
+				mVAOVideo->EnableVertexAttribArray(0);
+				mVAOVideo->SetVertexAttributePointers(0, 4, GL_FLOAT, false, 4 * sizeof(GL_FLOAT), 0, true);
+
+			mVAOVideo->Unbind();
+		mVBOVideo->UnBind();
 
 		// -------------------------------------------------------------
 	}
@@ -236,7 +246,23 @@ namespace Rendering
 	{
 		if (!mFinalRenderFBO)
 		{
-			SetupFinalRenderFBO();
+			mFinalRenderFBO = new Framebuffer();
+
+			unsigned int screenWidth  = GetScreenWidth();
+			unsigned int screenHeight = GetScreenHeight();
+
+			// Colour buffer
+			mColourTexture = new Texture::Texture2D();
+			mColourTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
+
+			// Depth buffer
+			mDepthTexture = new Texture::Texture2D();
+			mDepthTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
+
+			mFinalRenderFBO->AttachColourBuffer(mColourTexture);
+			mFinalRenderFBO->AttachDepthBuffer(mDepthTexture);
+
+			mFinalRenderFBO->CheckComplete();
 		}
 
 		if (mActiveCamera)
@@ -264,6 +290,10 @@ namespace Rendering
 		// --------------------------------
 
 		OpenGLRenderPipeline::SetLineModeEnabled(Window::GetLineMode());
+
+		// --------------------------------
+
+		mFinalRenderFBO->SetActive(false, true);
 
 		// --------------------------------
 

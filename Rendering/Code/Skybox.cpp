@@ -67,10 +67,7 @@ namespace Rendering
 
 		if (!mCubeVAO)
 		{
-			mCubeVAO = new Buffers::VertexArrayObject();
-
-			if (!mCubeVAO)
-				SetupBufferData();
+			SetupBufferData();
 		}
 
 		SetupShaders();
@@ -89,10 +86,7 @@ namespace Rendering
 
 		if (!mCubeVAO)
 		{
-			mCubeVAO = new Buffers::VertexArrayObject();
-
-			if (!mCubeVAO)
-				SetupBufferData();
+			SetupBufferData();
 		}
 
 		SetupShaders();
@@ -135,12 +129,22 @@ namespace Rendering
 
 	void Skybox::SetupBufferData()
 	{
-		// Create the VBO and set its data
-		mCubeVBO = new Buffers::VertexBufferObject();
-		mCubeVBO->SetBufferData(mCubeData, sizeof(Maths::Vector::Vector3D<float>) * 36, GL_STATIC_DRAW);
+		mCubeVAO = new Buffers::VertexArrayObject();
 
-		// Setup the vao
-		mCubeVAO->SetVertexAttributePointers(0, 3, GL_FLOAT, false, 3 * sizeof(GL_FLOAT), 0, true);
+		mCubeVAO->Bind();
+
+			// Create the VBO and set its data
+			mCubeVBO = new Buffers::VertexBufferObject();
+			mCubeVBO->Bind();
+				mCubeVBO->SetTarget(GL_ARRAY_BUFFER);
+				mCubeVBO->SetBufferData(mCubeData, sizeof(Maths::Vector::Vector3D<float>) * 36, GL_STATIC_DRAW);
+
+				// Setup the vao
+				mCubeVAO->EnableVertexAttribArray(0);
+				mCubeVAO->SetVertexAttributePointers(0, 3, GL_FLOAT, false, 3 * sizeof(GL_FLOAT), 0, true);
+
+		mCubeVAO->Unbind();
+		mCubeVBO->UnBind();
 	}
 
 	// -----------------------------------------

@@ -54,6 +54,24 @@ namespace Rendering
 				return true;
 			}
 
+			void DetachShader(Shaders::Shader* shaderToDetach)
+			{
+				if (mAttachedCount == 0)
+				{
+					std::cout << "Trying to detach a shader from a program with none attached!" << std::endl;
+					return;
+				}
+
+				glDetachShader(mShaderProgramID, shaderToDetach->GetShaderID());
+
+				int error = glGetError();
+				ASSERTMSG(error != 0, "Failed to attach shader to program");
+
+				mAttachedCount--;
+
+				return;
+			}
+
 			// ----------------------------------------------------------
 
 			// Function to link all attached shaders to the program

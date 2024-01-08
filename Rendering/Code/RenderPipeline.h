@@ -71,8 +71,6 @@ namespace Rendering
 		Framebuffer*                          mShadowMap;
 		Maths::Vector::Vector2D<unsigned int> mShadowMapImageDimensions;
 
-		void SetupFinalRenderFBO();
-
 		// -------------------
 
 		void SetupUsefulVBOData();

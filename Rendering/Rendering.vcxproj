@@ -91,11 +91,11 @@
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap.frag" />
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap_Reflections.frag" />
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\Skybox.frag" />
-    <None Include="..\WaterArtefact\Code\Shaders\Fragment\Sprite.frag" />
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\VideoFragmentShader.frag" />
     <None Include="..\WaterArtefact\Code\Shaders\Vertex\ConvoluteCubeMap.vert" />
     <None Include="..\WaterArtefact\Code\Shaders\Vertex\ConvoluteCubeMap_Reflections.vert" />
     <None Include="..\WaterArtefact\Code\Shaders\Vertex\Skybox.vert" />
-    <None Include="..\WaterArtefact\Code\Shaders\Vertex\Sprite.vert" />
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\VideoVertexShader.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

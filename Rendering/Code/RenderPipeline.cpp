@@ -68,7 +68,7 @@ namespace Rendering
 	{
 		if (mFinalRenderFBO)
 		{
-			float intensity = 0.6f;
+			float intensity = 1.0f;
 			mFinalRenderFBO->ClearAll(intensity, intensity, intensity, 1.0f);
 		}
 	}
@@ -92,33 +92,4 @@ namespace Rendering
 		if(mActiveCamera)
 			mActiveCamera->SetResolution((float)mScreenWidth, (float)mScreenHeight);
 	}
-
-	// -------------------------------------------------
-
-	void RenderPipeline::SetupFinalRenderFBO()
-	{
-		if (mFinalRenderFBO)
-		{
-			mFinalRenderFBO->SetActive(true, true);
-
-			Texture::Texture2D* colourBuffer = new Texture::Texture2D();
-
-			if (colourBuffer)
-			{
-				colourBuffer->InitEmpty(mScreenWidth, mScreenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
-				mFinalRenderFBO->AttachColourBuffer(colourBuffer);
-			}
-
-			Texture::Texture2D* depthBuffer = new Texture::Texture2D();
-			if (depthBuffer)
-			{
-				depthBuffer->InitEmpty(mScreenWidth, mScreenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
-				mFinalRenderFBO->AttachDepthBuffer(depthBuffer);
-			}
-
-			mFinalRenderFBO->CheckComplete();
-		}
-	}
-
-	// -------------------------------------------------
 }

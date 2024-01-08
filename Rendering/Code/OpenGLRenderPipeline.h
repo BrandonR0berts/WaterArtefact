@@ -18,6 +18,12 @@ namespace Rendering
 		class ShaderProgram;
 	}
 
+	namespace Texture
+	{
+		class Texture2D;
+	}
+
+
 	// This is the main game render flow, which hooks into the current level to grab the data about what should be being rendered
 	class OpenGLRenderPipeline final : public RenderPipeline
 	{
@@ -77,6 +83,9 @@ namespace Rendering
 
 		Buffers::VertexArrayObject*                  mVAOVideo;
 		Buffers::VertexBufferObject*                 mVBOVideo;
+
+		Texture::Texture2D* mColourTexture;
+		Texture::Texture2D* mDepthTexture;
 
 		// ---------------------------------------------------------------- //
 

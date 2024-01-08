@@ -7,11 +7,6 @@
 
 namespace Rendering
 {	
-	namespace Texture
-	{
-		class Texture2D;
-	}
-
 	class ShaderStore;
 	class ResourceCollection;
 
@@ -111,8 +106,6 @@ namespace Rendering
 		void ClearBuffers();
 		void PollEvents();
 
-		void SetupFinalRenderFBO();
-
 		// -------------------------------
 
 		void RenderDebugMenu(const float deltaTime);
@@ -125,14 +118,8 @@ namespace Rendering
 		bool                mWindowShouldClose;
 		double              mOldTime;
 
-		// Final render buffer data
-		Texture::Texture2D* mColourTexture;
-		Texture::Texture2D* mDepthTexture;
 
-		Framebuffer*        mFinalRenderFBO;
-
-
-		static RenderPipeline*      sRenderPipeline;
+		static RenderPipeline* sRenderPipeline;
 
 		// -------------------------------
 

@@ -604,6 +604,9 @@ namespace Rendering
 
 				mConvolutionShader->LinkShadersToProgram();
 
+				mConvolutionShader->DetachShader(vertexShader);
+				mConvolutionShader->DetachShader(fragmentShader);
+
 				delete vertexShader;
 				delete fragmentShader;
 			}
@@ -619,6 +622,9 @@ namespace Rendering
 				mRoughnessConvolutionShader->AttachShader(fragmentShader);
 
 				mRoughnessConvolutionShader->LinkShadersToProgram();
+
+				mRoughnessConvolutionShader->DetachShader(vertexShader);
+				mRoughnessConvolutionShader->DetachShader(fragmentShader);
 
 				delete vertexShader;
 				delete fragmentShader;

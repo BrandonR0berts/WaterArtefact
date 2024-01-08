@@ -1,6 +1,3 @@
-// Setup //
-- Bring over maths, ImGui, OpenGL, and rendering code
-
 // Surface modeling //
 - Setup vertex buffers for height map
 - Create compute shader
