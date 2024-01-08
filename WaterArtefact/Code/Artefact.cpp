@@ -2,6 +2,9 @@
 
 #include "Rendering/Code/Window.h"
 
+#include "Input/Code/KeyboardInput.h"
+#include "Input/Code/Input.h"
+
 namespace Artefact
 {
 	// -----------------------------------------------------
@@ -24,7 +27,19 @@ namespace Artefact
 
 	void ArtefactProgram::Update(const float deltaTime)
 	{
+		Input::InputSingleton::Get()->UpdateAllDevices();
 
+		std::vector<Input::InputDevice*> attachedKeyboards = Input::InputSingleton::Get()->GetAllKeyboardsAttached();
+
+		if (!attachedKeyboards.empty() && mRenderWindow)
+		{
+			Input::KeyboardInput::KeyboardInputDevice* keyboard = (Input::KeyboardInput::KeyboardInputDevice*)attachedKeyboards[0];
+
+			if (keyboard->QueryInput(Input::KeyboardInput::TILDE) == Input::ButtonInputState::PRESSED)
+			{
+				mRenderWindow->ToggleDebugOverlay();
+			}
+		}
 	}
 
 	// -----------------------------------------------------
