@@ -1,21 +1,16 @@
 #version 330 core
 
-layout (location = 0) in vec4 vertexData;
+out vec4 FragColor;
 
-out vec2 textureCoords;
-
-uniform mat4 modelMat;
-uniform mat4 projectionMat;
-
-uniform bool flipV;
+uniform sampler2D normalBuffer;
+uniform sampler2D tangentBuffer;
+uniform sampler2D binormalBuffer;
 
 void main()
 {
-	// Pass through the texture coord data
-	if(flipV)
-		textureCoords = vec2(vertexData.z, 1.0 - vertexData.w);
-	else
-		textureCoords = vec2(vertexData.z, vertexData.w);
+	vec4 normal   = texture(normalBuffer,   vec2(0.0, 0.0));
+	vec4 tangent  = texture(tangentBuffer,  vec2(0.0, 0.0));
+	vec4 binormal = texture(binormalBuffer, vec2(0.0, 0.0));
 
-	gl_Position = projectionMat * modelMat * vec4(vertexData.xy, 0.0, 1.0);
+	FragColor = vec4(0.0, 1.0, 0.0, 1.0);
 }

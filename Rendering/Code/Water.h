@@ -1,10 +1,5 @@
 #pragma once
 
-#include "Buffers.h"
-
-#include "Shaders/Shader.h"
-#include "Shaders/ShaderProgram.h"
-
 #include "FFT.h"
 #include "Maths/Code/Vector.h"
 
@@ -13,6 +8,24 @@
 
 namespace Rendering
 {
+	namespace Texture
+	{
+		class Texture2D;
+	}
+
+	namespace ShaderPrograms
+	{
+		class ShaderProgram;
+	}
+
+	namespace Buffers
+	{
+		class VertexBufferObject;
+		class VertexArrayObject;
+	}
+
+	class Camera;
+
 	// ---------------------------------------
 
 	class WaterSimulation final
@@ -24,24 +37,53 @@ namespace Rendering
 		void RenderDebugMenu();
 
 		void Update(const float deltaTime);
-		void Render();
+		void Render(Rendering::Camera* camera);
 
 		bool IsBelowSurface(Maths::Vector::Vector3D<float> position);
 
 	private:
 		void PerformanceTesting();
 
-		Buffers::VertexArrayObject*    mWaterVAO;
+		void SetupBuffers();
+		void SetupShaders();
+		void SetupTextures();
+
+		float* GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex);
+
+		// --------------------- Modelling surface --------------------- //
+		// Buffer holding the verticies of the water's surface
 		Buffers::VertexBufferObject*   mWaterVBO;
 
 		// Shader for modeling the movement of waves
-		Shaders::ComputeShader*        mWaterMovementComputeShader;
+		// Writes out the new X-Y-Z position of the verticies to an RGB buffer
+		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader;
+
+		// Buffer that holds the X-Y-Z output from the compute shader above
+		Texture::Texture2D*            mPositionalBuffer;
+
+		// Buffer that holds the normal of the point given out by the computer shader
+		Texture::Texture2D*            mNormalBuffer;
+
+		// Buffer that holds the tangent of the point given out by the computer shader
+		Texture::Texture2D*            mTangentBuffer;
+
+		// Buffer that holds the BiNormal of the point given out by the computer shader
+		Texture::Texture2D*            mBiNormalBuffer;
+
+		// Different configurations as to how the surface will be being modelled
+		std::vector<std::pair<std::string, FFTConfiguration>> mFFTConfigurations;
+
+		// --------------------- Rendering surface --------------------- //
+		Buffers::VertexArrayObject*    mWaterVAO;
 
 		// Shader program used for rendering the surface of the water volume
 		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders;
 
-		std::vector<std::pair<std::string, FFTConfiguration>> mFFTConfigurations;
+		unsigned int mVertexCount;
 
+		// --------------------- Other --------------------- //
+
+		// If the simuation is being updated
 		bool                           mSimulationPaused;
 		bool                           mWireframe;
 	};

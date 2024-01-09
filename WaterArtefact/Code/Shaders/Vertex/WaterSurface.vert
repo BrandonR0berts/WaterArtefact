@@ -1,21 +1,17 @@
 #version 330 core
 
-layout (location = 0) in vec4 vertexData;
+layout (location = 0) in vec3 vertexPosition;
 
-out vec2 textureCoords;
+// Offset buffer provided by the water simulation
+uniform sampler2D positionalBuffer;
 
 uniform mat4 modelMat;
+uniform mat4 viewMat;
 uniform mat4 projectionMat;
-
-uniform bool flipV;
 
 void main()
 {
-	// Pass through the texture coord data
-	if(flipV)
-		textureCoords = vec2(vertexData.z, 1.0 - vertexData.w);
-	else
-		textureCoords = vec2(vertexData.z, vertexData.w);
+	//texture(positionalBuffer, vec2(0.0, 0.0));
 
-	gl_Position = projectionMat * modelMat * vec4(vertexData.xy, 0.0, 1.0);
+	gl_Position = projectionMat * modelMat * vec4(vertexPosition.xyz, 1.0);
 }

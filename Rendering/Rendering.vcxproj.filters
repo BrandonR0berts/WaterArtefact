@@ -256,5 +256,14 @@
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\VideoFragmentShader.frag">
       <Filter>Shaders\UI</Filter>
     </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate.comp">
+      <Filter>Shaders\Compute</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface.vert">
+      <Filter>Shaders\Water</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Fragment\WaterSurface.frag">
+      <Filter>Shaders\Water</Filter>
+    </None>
   </ItemGroup>
 </Project>
