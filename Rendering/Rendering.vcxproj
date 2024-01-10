@@ -91,7 +91,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate.comp" />
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Gerstner.comp" />
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Sine.comp" />
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Tessendorf.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap.frag" />
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap_Reflections.frag" />
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\Skybox.frag" />

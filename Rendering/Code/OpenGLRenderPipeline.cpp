@@ -357,7 +357,6 @@ namespace Rendering
 
 		BindTextureToTextureUnit(GL_TEXTURE0, mFinalRenderFBO->GetColourBuffer()->GetTextureID());
 
-
 		//float*    projMatrix = &GetActiveCamera()->GetOrthoMatrix()[0][0];
 		glm::mat4 model = glm::mat4(1.0f);
 		// model = glm::scale(model, glm::vec3((float)Window::GetWindowWidth(), (float)Window::GetWindowHeight(), 1.0f));

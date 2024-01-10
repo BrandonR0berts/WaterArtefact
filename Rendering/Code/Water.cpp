@@ -24,7 +24,10 @@ namespace Rendering
 
 	WaterSimulation::WaterSimulation()
 		: mWaterVBO(nullptr)
-		, mWaterMovementComputeShader(nullptr)
+		, mWaterMovementComputeShader_Sine(nullptr)
+		, mWaterMovementComputeShader_Gerstner(nullptr)
+		, mWaterMovementComputeShader_Tessendorf(nullptr)
+		, mActiveWaterModellingApproach(nullptr)
 		, mPositionalBuffer(nullptr)
 		, mNormalBuffer(nullptr)
 		, mTangentBuffer(nullptr)
@@ -37,11 +40,11 @@ namespace Rendering
 		, mSimulationPaused(false)
 		, mWireframe(false)
 	{
-		// VBO and VAO
-		SetupBuffers();
-
 		// Compute and final render shaders
 		SetupShaders();
+
+		// VBO and VAO
+		SetupBuffers();
 
 		// Storage textures
 		SetupTextures();
@@ -56,8 +59,16 @@ namespace Rendering
 		delete mSurfaceRenderShaders;
 		mSurfaceRenderShaders = nullptr;
 
-		delete mWaterMovementComputeShader;
-		mWaterMovementComputeShader = nullptr;
+		delete mWaterMovementComputeShader_Sine;
+		mWaterMovementComputeShader_Sine = nullptr;
+
+		delete mWaterMovementComputeShader_Gerstner;
+		mWaterMovementComputeShader_Gerstner = nullptr;
+
+		delete mWaterMovementComputeShader_Tessendorf;
+		mWaterMovementComputeShader_Tessendorf = nullptr;
+
+		mActiveWaterModellingApproach = nullptr;
 
 		// --------------------------------------
 
@@ -112,27 +123,61 @@ namespace Rendering
 			delete vertexShader;
 			delete fragmentShader;
 
-			mSurfaceRenderShaders->SetInt("positionalBuffer", 0);
-			mSurfaceRenderShaders->SetInt("normalBuffer",     1);
-			mSurfaceRenderShaders->SetInt("tangentBuffer",    2);
-			mSurfaceRenderShaders->SetInt("binormalBuffer",   3);
+			mSurfaceRenderShaders->UseProgram();
+				mSurfaceRenderShaders->SetInt("positionalBuffer", 0);
+				mSurfaceRenderShaders->SetInt("normalBuffer",     1);
+				mSurfaceRenderShaders->SetInt("tangentBuffer",    2);
+				mSurfaceRenderShaders->SetInt("binormalBuffer",   3);
 		}
 		// --------------------------------------------------------------
 
-		if(!mWaterMovementComputeShader)
+		if(!mWaterMovementComputeShader_Sine)
 		{
-			mWaterMovementComputeShader = new ShaderPrograms::ShaderProgram();
+			mWaterMovementComputeShader_Sine = new ShaderPrograms::ShaderProgram();
 
-			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/SurfaceUpdate.comp");
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/SurfaceUpdate_Sine.comp");
 
-			mWaterMovementComputeShader->AttachShader(computeShader);
+			mWaterMovementComputeShader_Sine->AttachShader(computeShader);
 
-				mWaterMovementComputeShader->LinkShadersToProgram();
+				mWaterMovementComputeShader_Sine->LinkShadersToProgram();
 
-			mWaterMovementComputeShader->DetachShader(computeShader);
+			mWaterMovementComputeShader_Sine->DetachShader(computeShader);
 
 			delete computeShader;
 		}
+
+		if(!mWaterMovementComputeShader_Gerstner)
+		{
+			mWaterMovementComputeShader_Gerstner = new ShaderPrograms::ShaderProgram();
+
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/SurfaceUpdate_Gerstner.comp");
+
+			mWaterMovementComputeShader_Gerstner->AttachShader(computeShader);
+
+				mWaterMovementComputeShader_Gerstner->LinkShadersToProgram();
+
+			mWaterMovementComputeShader_Gerstner->DetachShader(computeShader);
+
+			delete computeShader;
+		}
+
+		if (!mWaterMovementComputeShader_Tessendorf)
+		{
+			mWaterMovementComputeShader_Tessendorf = new ShaderPrograms::ShaderProgram();
+
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/SurfaceUpdate_Tessendorf.comp");
+
+			mWaterMovementComputeShader_Tessendorf->AttachShader(computeShader);
+
+				mWaterMovementComputeShader_Tessendorf->LinkShadersToProgram();
+
+			mWaterMovementComputeShader_Tessendorf->DetachShader(computeShader);
+
+			delete computeShader;
+		}
+
+		mActiveWaterModellingApproach = mWaterMovementComputeShader_Sine;
+
 		// --------------------------------------------------------------
 	}
 
@@ -144,11 +189,21 @@ namespace Rendering
 		{
 			mWaterVBO = new Buffers::VertexBufferObject();
 
-			unsigned int dimensions            = 100;
-			float        distanceBetweenPoints = 1.0f;
+			unsigned int dimensions            = 50;
+			float        distanceBetweenPoints = 0.5f;
 			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(dimensions, distanceBetweenPoints);
 
 			mWaterVBO->SetBufferData((void*)vertexData, mVertexCount * sizeof(Maths::Vector::Vector2D<float>), GL_STATIC_DRAW);
+
+			if (mSurfaceRenderShaders)
+			{
+				bool         evenSplit                  = dimensions % 2 == 0;
+				unsigned int halfDimensions             = (float)dimensions / 2.0f;
+				float        startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenPoints) + 0.5f : halfDimensions * distanceBetweenPoints;
+
+				mSurfaceRenderShaders->UseProgram();
+				mSurfaceRenderShaders->SetFloat("maxDistanceFromOrigin", startingDistanceFromCentre);
+			}
 
 			delete[] vertexData;
 		}
@@ -173,7 +228,15 @@ namespace Rendering
 
 	void WaterSimulation::SetupTextures()
 	{
+		if (!mPositionalBuffer)
+		{
+			mPositionalBuffer = new Texture::Texture2D();
 
+			unsigned int width  = 1000;
+			unsigned int height = 1000;
+
+			mPositionalBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+		}
 	}
 
 	// ---------------------------------------------
@@ -197,6 +260,24 @@ namespace Rendering
 				PerformanceTesting();
 			}
 
+			if (ImGui::CollapsingHeader("Modelling approach"))
+			{
+				if (ImGui::Button("Sine Waves"))
+				{
+					mActiveWaterModellingApproach = mWaterMovementComputeShader_Sine;
+				}
+
+				if (ImGui::Button("Gerstner Waves"))
+				{
+					mActiveWaterModellingApproach = mWaterMovementComputeShader_Gerstner;
+				}
+
+				if (ImGui::Button("Ocean simulation"))
+				{
+					mActiveWaterModellingApproach = mWaterMovementComputeShader_Tessendorf;
+				}
+			}
+
 		ImGui::End();
 	}
 
@@ -204,20 +285,20 @@ namespace Rendering
 
 	void WaterSimulation::Update(const float deltaTime)
 	{
-		if (mSimulationPaused || !mWaterMovementComputeShader)
+		if (mSimulationPaused || !mActiveWaterModellingApproach)
 			return;
 
 		// Update the texture holding the positional data for the water's surface
 		// This is through dispatching the compute shader to compute the positions
 		
-		/*mWaterMovementComputeShader->UseProgram();
+		mActiveWaterModellingApproach->UseProgram();
 
 			mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+			//mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+			//mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+			//mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
-		glDispatchCompute(1, 1, 1);*/
+		glDispatchCompute(1000, 1000, 1);
 	}
 
 	// ---------------------------------------------
@@ -232,7 +313,7 @@ namespace Rendering
 		// Then the fragment shader used information given to it from the other textures output by the compute shader
 
 		// Make sure the compute shader has finished before reading from the textures
-		//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		mWaterVAO->Bind();
 
@@ -240,10 +321,10 @@ namespace Rendering
 
 			OpenGLRenderPipeline* renderPipeline = ((OpenGLRenderPipeline*)Window::GetRenderPipeline());
 
-			renderPipeline->SetLineModeEnabled(true);
+			renderPipeline->SetLineModeEnabled(mWireframe);
 
 			// Textures
-			//renderPipeline->BindTextureToTextureUnit(mPositionalBuffer->GetTextureID(), 0, true);
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mPositionalBuffer->GetTextureID(), true);
 			//renderPipeline->BindTextureToTextureUnit(mNormalBuffer->GetTextureID(), 1, true);
 			//renderPipeline->BindTextureToTextureUnit(mTangentBuffer->GetTextureID(), 2, true);
 			//renderPipeline->BindTextureToTextureUnit(mBiNormalBuffer->GetTextureID(), 3, true);

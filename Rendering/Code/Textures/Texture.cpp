@@ -108,6 +108,9 @@ namespace Rendering
 		void Texture2D::BindForComputeShader(GLuint unit, GLint level, bool layered, GLint layer, GLenum access, GLenum format)
 		{
 			glBindImageTexture(unit, mTextureID, level, layered, layer, access, format);
+
+			GLenum error = glGetError();
+			ASSERTMSG(error != 0, "Error binding texture2D.");
 		}
 
 		// ----------------------------------------------------------------------------------------------------------

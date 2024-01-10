@@ -1,16 +1,5 @@
-// Surface modeling //
-- Setup vertex buffers for height map
-- Create compute shader
-
-// Surface rendering //
-- Create render flow
-- Create vertex and fragment shaders
-
 // Testing data collection //
 - Determine which sections need their times captured
 - Create functionality for running a test that ImGui will hook into
 
-// ImGui //
-- Enabling/disabling of editor menu
-- Buttons for modifying the state of the simulation
-- Buttons for triggering the testing code
+- Fix resizing code

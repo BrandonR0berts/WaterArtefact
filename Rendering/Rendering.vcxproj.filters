@@ -256,7 +256,7 @@
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\VideoFragmentShader.frag">
       <Filter>Shaders\UI</Filter>
     </None>
-    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate.comp">
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Sine.comp">
       <Filter>Shaders\Compute</Filter>
     </None>
     <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface.vert">
@@ -264,6 +264,12 @@
     </None>
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\WaterSurface.frag">
       <Filter>Shaders\Water</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Gerstner.comp">
+      <Filter>Shaders\Compute</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Tessendorf.comp">
+      <Filter>Shaders\Compute</Filter>
     </None>
   </ItemGroup>
 </Project>

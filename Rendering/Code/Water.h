@@ -41,6 +41,8 @@ namespace Rendering
 
 		bool IsBelowSurface(Maths::Vector::Vector3D<float> position);
 
+		//Texture::Texture2D* GetHeightFieldData() { return mPositionalBuffer; }
+
 	private:
 		void PerformanceTesting();
 
@@ -56,7 +58,11 @@ namespace Rendering
 
 		// Shader for modeling the movement of waves
 		// Writes out the new X-Y-Z position of the verticies to an RGB buffer
-		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader;
+		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Sine;
+		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Gerstner;
+		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Tessendorf;
+
+		ShaderPrograms::ShaderProgram* mActiveWaterModellingApproach;
 
 		// Buffer that holds the X-Y-Z output from the compute shader above
 		Texture::Texture2D*            mPositionalBuffer;
