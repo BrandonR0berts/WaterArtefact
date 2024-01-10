@@ -191,8 +191,8 @@ namespace Rendering
 		{
 			mWaterVBO = new Buffers::VertexBufferObject();
 
-			unsigned int dimensions            = 500;
-			float        distanceBetweenPoints = 0.05f;
+			unsigned int dimensions            = 2002;
+			float        distanceBetweenPoints = 0.01;
 			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(dimensions, distanceBetweenPoints);
 
 			mWaterVBO->SetBufferData((void*)vertexData, mVertexCount * sizeof(Maths::Vector::Vector2D<float>), GL_STATIC_DRAW);
@@ -410,18 +410,55 @@ namespace Rendering
 	// ---------------------------------------------
 
 	Maths::Vector::Vector2D<float>* WaterSimulation::GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex)
-	{
-		mVertexCount = ((dimensions - 1) * (2 * dimensions));
-		Maths::Vector::Vector2D<float>* newData     = new Maths::Vector::Vector2D<float>[mVertexCount];
-			
+	{		
 		bool         evenSplit      = dimensions % 2 == 0;
 		unsigned int halfDimensions = dimensions / 2;
 
 		float                          startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenVertex) + 0.5f : halfDimensions * distanceBetweenVertex;
 		Maths::Vector::Vector2D<float> topLeftXPos                = Maths::Vector::Vector2D(-startingDistanceFromCentre, -startingDistanceFromCentre);
 
-		unsigned int currentVertexID = 0;
-		bool movementDirectionRight = true;
+		unsigned int currentVertexID        = 0;
+		bool         movementDirectionRight = true;
+
+		// ------------------------------------------------------- //
+
+		unsigned int totalVertexCount = 0;
+
+		for (unsigned int z = 0; z < dimensions - 1; z++)
+		{
+			for (unsigned int x = 0; x < dimensions; x++)
+			{
+				if (movementDirectionRight)
+				{
+					totalVertexCount += 2;
+
+					// If this is the last point in the line
+					if (x == dimensions - 1)
+					{
+						movementDirectionRight = false;
+						totalVertexCount += 2;
+					}
+				}
+				else
+				{
+					totalVertexCount += 2;
+
+					// If this is the last point in the line
+					if (x == dimensions - 1)
+					{
+						// Flip the direction
+						movementDirectionRight = true;
+					}
+				}
+			}
+		}
+
+		// ------------------------------------------------------- //
+
+		                                mVertexCount = totalVertexCount;
+		Maths::Vector::Vector2D<float>* newData      = new Maths::Vector::Vector2D<float>[mVertexCount];
+
+		// ------------------------------------------------------- //
 
 		for (unsigned int z = 0; z < dimensions - 1; z++)
 		{
@@ -446,34 +483,47 @@ namespace Rendering
 					newData[currentVertexID++] = newPos;
 
 					// If this is the last point in the line
-					if (x == dimensions)
-					{
+					if (x == dimensions - 1)
+					{	
 						// Flip the direction
-						movementDirectionRight = !movementDirectionRight;
+						movementDirectionRight = false;
+
+						newData[currentVertexID] = newData[currentVertexID - 1];
+						currentVertexID++;
+
+						newData[currentVertexID] = newData[currentVertexID - 1];
+						currentVertexID++;
 					}
 				}
 				else
 				{
-					newPos.x += distanceBetweenVertex * (dimensions - x);
+					newPos.x += distanceBetweenVertex * (dimensions - x - 1);
 					newPos.y += distanceBetweenVertex * (z + 1);
 
 					newData[currentVertexID++] = newPos;
 
-					// Now move back along the line
-					newPos.x -= distanceBetweenVertex;
-					newPos.y -= distanceBetweenVertex;
-
-					newData[currentVertexID++] = newPos;
-
 					// If this is the last point in the line
-					if (x == dimensions)
+					if (x == dimensions - 1)
 					{
 						// Flip the direction
-						movementDirectionRight = !movementDirectionRight;
+						movementDirectionRight = true;
+						
+						newData[currentVertexID] = newData[currentVertexID - 1];
+						currentVertexID++;
+					}
+					else
+					{
+						// Now move back along the line
+						newPos.x -= distanceBetweenVertex;
+						newPos.y -= distanceBetweenVertex;
+
+						newData[currentVertexID++] = newPos;
 					}
 				}
 			}
 		}
+
+		// ------------------------------------------------------- //
 
 		return newData;
 	}
