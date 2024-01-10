@@ -33,6 +33,8 @@ namespace Rendering
 		, mTangentBuffer(nullptr)
 		, mBiNormalBuffer(nullptr)
 		, mFFTConfigurations()
+		, mRunningTime(0.0f)
+		, mSineWaveData()
 
 		, mWaterVAO(nullptr)
 		, mSurfaceRenderShaders(nullptr)
@@ -189,8 +191,8 @@ namespace Rendering
 		{
 			mWaterVBO = new Buffers::VertexBufferObject();
 
-			unsigned int dimensions            = 50;
-			float        distanceBetweenPoints = 0.5f;
+			unsigned int dimensions            = 500;
+			float        distanceBetweenPoints = 0.05f;
 			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(dimensions, distanceBetweenPoints);
 
 			mWaterVBO->SetBufferData((void*)vertexData, mVertexCount * sizeof(Maths::Vector::Vector2D<float>), GL_STATIC_DRAW);
@@ -198,7 +200,7 @@ namespace Rendering
 			if (mSurfaceRenderShaders)
 			{
 				bool         evenSplit                  = dimensions % 2 == 0;
-				unsigned int halfDimensions             = (float)dimensions / 2.0f;
+				unsigned int halfDimensions             = dimensions / 2;
 				float        startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenPoints) + 0.5f : halfDimensions * distanceBetweenPoints;
 
 				mSurfaceRenderShaders->UseProgram();
@@ -277,8 +279,35 @@ namespace Rendering
 					mActiveWaterModellingApproach = mWaterMovementComputeShader_Tessendorf;
 				}
 			}
-
 		ImGui::End();
+
+		if(mActiveWaterModellingApproach)
+		{
+			ImGui::Begin("Water properties");
+
+				if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Sine)
+				{
+					ImGui::InputFloat("Amplitude",  &mSineWaveData.mAmplitude);
+					ImGui::InputFloat2("Direction", &mSineWaveData.mDirectionOfWave.x);
+					ImGui::InputFloat("Speed",      &mSineWaveData.mSpeedOfWave);
+					ImGui::InputFloat("Wavelength", &mSineWaveData.mWaveLength);
+
+					if (ImGui::Button("Defaults"))
+					{
+						mSineWaveData = SingleSineDataSet();
+					}
+				}
+				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Gerstner)
+				{
+
+				}
+				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Tessendorf)
+				{
+
+				}
+
+			ImGui::End();
+		}
 	}
 
 	// ---------------------------------------------
@@ -288,10 +317,18 @@ namespace Rendering
 		if (mSimulationPaused || !mActiveWaterModellingApproach)
 			return;
 
+		mRunningTime += deltaTime;
+
 		// Update the texture holding the positional data for the water's surface
 		// This is through dispatching the compute shader to compute the positions
-		
 		mActiveWaterModellingApproach->UseProgram();
+
+			mActiveWaterModellingApproach->SetFloat("time", mRunningTime);
+
+			mActiveWaterModellingApproach->SetFloat("amplitude",      mSineWaveData.mAmplitude);
+			mActiveWaterModellingApproach->SetVec2("directionOfWave", mSineWaveData.mDirectionOfWave);
+			mActiveWaterModellingApproach->SetFloat("speedOfWave",    mSineWaveData.mSpeedOfWave);
+			mActiveWaterModellingApproach->SetFloat("waveLength",     mSineWaveData.mWaveLength);
 
 			mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 			//mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);

@@ -18,6 +18,6 @@ void main()
 
 	vec4 position = texture(positionalBuffer, textureCoords);
 
-	//FragColor = vec4(0.0, 1.0, 0.0, 1.0);
-	FragColor = vec4(position.xy, 0.0, 1.0);
+	FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+	//FragColor = vec4(position.xy, 0.0, 1.0);
 }

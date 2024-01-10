@@ -26,6 +26,23 @@ namespace Rendering
 
 	class Camera;
 
+	struct SingleSineDataSet
+	{
+		SingleSineDataSet()
+			: mAmplitude(0.1f)
+			, mDirectionOfWave(1.0f, 0.0f)
+			, mSpeedOfWave(10.0f)
+			, mWaveLength(9.0f)
+		{
+
+		}
+
+		float                          mAmplitude;
+		Maths::Vector::Vector2D<float> mDirectionOfWave;
+		float                          mSpeedOfWave;
+		float                          mWaveLength;
+	};
+
 	// ---------------------------------------
 
 	class WaterSimulation final
@@ -40,8 +57,6 @@ namespace Rendering
 		void Render(Rendering::Camera* camera);
 
 		bool IsBelowSurface(Maths::Vector::Vector3D<float> position);
-
-		//Texture::Texture2D* GetHeightFieldData() { return mPositionalBuffer; }
 
 	private:
 		void PerformanceTesting();
@@ -78,6 +93,11 @@ namespace Rendering
 
 		// Different configurations as to how the surface will be being modelled
 		std::vector<std::pair<std::string, FFTConfiguration>> mFFTConfigurations;
+
+		float mRunningTime;
+
+		// Single sine wave modelling variables
+		SingleSineDataSet mSineWaveData;
 
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;

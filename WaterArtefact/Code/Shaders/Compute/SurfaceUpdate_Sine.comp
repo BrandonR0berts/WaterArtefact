@@ -7,14 +7,25 @@ layout(rgba32f, binding = 1) uniform image2D normalOutput;
 layout(rgba32f, binding = 2) uniform image2D tangentOutput;
 layout(rgba32f, binding = 3) uniform image2D binormalOutput;
 
+uniform float time;
+uniform float amplitude;
+uniform vec2  directionOfWave;
+uniform float speedOfWave;
+uniform float waveLength;
+
 void main()
 {
-	vec4 testValue = vec4(0.0, 0.0, 0.0, 1.0);
+	vec2 direction = normalize(directionOfWave);
+
+	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
 
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	
-    testValue.x = float(texelCoord.x)/(gl_NumWorkGroups.x);
-    testValue.y = float(texelCoord.y)/(gl_NumWorkGroups.y);
-	
-    imageStore(positionOutput, texelCoord, testValue);
+	float frequency     = 2.0 / waveLength;
+	float phaseConstant = speedOfWave * frequency;
+	float finalHeight   = amplitude * sin((dot(direction, texelCoord) * frequency) + (time * phaseConstant));
+
+	finalValue.y = finalHeight;
+
+    imageStore(positionOutput, texelCoord, finalValue);
 }
