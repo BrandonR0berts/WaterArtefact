@@ -48,7 +48,7 @@ namespace Rendering
 		void SetupShaders();
 		void SetupTextures();
 
-		float* GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex);
+		Maths::Vector::Vector2D<float>* GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex);
 
 		// --------------------- Modelling surface --------------------- //
 		// Buffer holding the verticies of the water's surface

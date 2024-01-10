@@ -276,6 +276,11 @@ namespace Rendering
 		{
 			mActiveCamera->Update(deltaTime);
 		}
+
+		if (mWaterSimulation)
+		{
+			mWaterSimulation->Update(deltaTime);
+		}
 	}
 
 	// -------------------------------------------------
@@ -310,7 +315,7 @@ namespace Rendering
 			// Render the sub-surface models
 
 			// Render the water's surface
-			mWaterSimulation->Render();
+			mWaterSimulation->Render(mActiveCamera);
 
 			// Render everything above the surface
 		}

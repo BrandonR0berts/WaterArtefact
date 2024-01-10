@@ -98,8 +98,8 @@ namespace Rendering
 		{
 			mSurfaceRenderShaders = new ShaderPrograms::ShaderProgram();
 
-			Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("WaterArtefact/Code/Shaders/Vertex/WaterSurface.vert");
-			Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("WaterArtefact/Code/Shaders/Fragment/WaterSurface.frag");
+			Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/WaterSurface.vert");
+			Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/WaterSurface.frag");
 
 			mSurfaceRenderShaders->AttachShader(vertexShader);
 			mSurfaceRenderShaders->AttachShader(fragmentShader);
@@ -123,7 +123,7 @@ namespace Rendering
 		{
 			mWaterMovementComputeShader = new ShaderPrograms::ShaderProgram();
 
-			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("WaterArtefact/Code/Shaders/Vertex/SurfaceUpdate.comp");
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/SurfaceUpdate.comp");
 
 			mWaterMovementComputeShader->AttachShader(computeShader);
 
@@ -144,10 +144,11 @@ namespace Rendering
 		{
 			mWaterVBO = new Buffers::VertexBufferObject();
 
-			unsigned int dimensions = 100;
-			float* vertexData = GenerateVertexData(100, 1.0f);
+			unsigned int dimensions            = 100;
+			float        distanceBetweenPoints = 1.0f;
+			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(dimensions, distanceBetweenPoints);
 
-			mWaterVBO->SetBufferData((void*)vertexData, dimensions * dimensions * sizeof(float) * 3, GL_STATIC_DRAW);
+			mWaterVBO->SetBufferData((void*)vertexData, mVertexCount * sizeof(Maths::Vector::Vector2D<float>), GL_STATIC_DRAW);
 
 			delete[] vertexData;
 		}
@@ -156,11 +157,12 @@ namespace Rendering
 		{
 			mWaterVAO = new Buffers::VertexArrayObject();
 
+			mWaterVAO->Bind();
 			mWaterVBO->Bind();
 
 			// Positional data
 			mWaterVAO->EnableVertexAttribArray(0);
-			mWaterVAO->SetVertexAttributePointers(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), 0, true);
+			mWaterVAO->SetVertexAttributePointers(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GL_FLOAT), 0, true);
 
 			mWaterVAO->Unbind();
 			mWaterVBO->UnBind();
@@ -208,14 +210,14 @@ namespace Rendering
 		// Update the texture holding the positional data for the water's surface
 		// This is through dispatching the compute shader to compute the positions
 		
-		mWaterMovementComputeShader->UseProgram();
+		/*mWaterMovementComputeShader->UseProgram();
 
 			mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 			mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 			mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 			mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
-		glDispatchCompute(1, 1, 1);
+		glDispatchCompute(1, 1, 1);*/
 	}
 
 	// ---------------------------------------------
@@ -223,14 +225,14 @@ namespace Rendering
 	void WaterSimulation::Render(Rendering::Camera* camera)
 	{
 		// Existance checks
-		if (!mWaterVAO || !mWaterVBO || !mPositionalBuffer || !mNormalBuffer || !mTangentBuffer || !mBiNormalBuffer || !mSurfaceRenderShaders)
-			return;
+		//if (!mWaterVAO || !mWaterVBO || !mPositionalBuffer || !mNormalBuffer || !mTangentBuffer || !mBiNormalBuffer || !mSurfaceRenderShaders)
+		//	return;
 
 		// Rendering of the surface is done through passing the positional texture into the vertex shader to create the final world position
 		// Then the fragment shader used information given to it from the other textures output by the compute shader
 
 		// Make sure the compute shader has finished before reading from the textures
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		mWaterVAO->Bind();
 
@@ -238,11 +240,13 @@ namespace Rendering
 
 			OpenGLRenderPipeline* renderPipeline = ((OpenGLRenderPipeline*)Window::GetRenderPipeline());
 
+			renderPipeline->SetLineModeEnabled(true);
+
 			// Textures
-			renderPipeline->BindTextureToTextureUnit(mPositionalBuffer->GetTextureID(), 0, true);
-			renderPipeline->BindTextureToTextureUnit(mNormalBuffer->GetTextureID(), 1, true);
-			renderPipeline->BindTextureToTextureUnit(mTangentBuffer->GetTextureID(), 2, true);
-			renderPipeline->BindTextureToTextureUnit(mBiNormalBuffer->GetTextureID(), 3, true);
+			//renderPipeline->BindTextureToTextureUnit(mPositionalBuffer->GetTextureID(), 0, true);
+			//renderPipeline->BindTextureToTextureUnit(mNormalBuffer->GetTextureID(), 1, true);
+			//renderPipeline->BindTextureToTextureUnit(mTangentBuffer->GetTextureID(), 2, true);
+			//renderPipeline->BindTextureToTextureUnit(mBiNormalBuffer->GetTextureID(), 3, true);
 
 			// Matricies
 			Maths::Matrix::Matrix4X4 identity = Maths::Matrix::Matrix4X4();
@@ -254,7 +258,9 @@ namespace Rendering
 			glm::mat4 projectionMat = camera->GetPerspectiveMatrix();
 			mSurfaceRenderShaders->SetMat4("projectionMat", &projectionMat[0][0]);
 
-			glDrawArrays(GL_TRIANGLES, 0, mVertexCount);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, mVertexCount);
+
+			renderPipeline->SetLineModeEnabled(false);
 
 		mWaterVAO->Unbind();
 	}
@@ -278,19 +284,78 @@ namespace Rendering
 		// Get the offset stored in the buffer
 
 		// See if the position passed in is below or above the value from the buffer
-		mPositionalBuffer->
+		
 
 		return false;
 	}
 
 	// ---------------------------------------------
 
-	float* WaterSimulation::GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex)
+	Maths::Vector::Vector2D<float>* WaterSimulation::GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex)
 	{
-		unsigned int vertexCount = dimensions * dimensions;
-		float* newData = new float[vertexCount];
+		mVertexCount = ((dimensions - 1) * (2 * dimensions));
+		Maths::Vector::Vector2D<float>* newData     = new Maths::Vector::Vector2D<float>[mVertexCount];
+			
+		bool         evenSplit      = dimensions % 2 == 0;
+		unsigned int halfDimensions = dimensions / 2;
 
+		float                          startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenVertex) + 0.5f : halfDimensions * distanceBetweenVertex;
+		Maths::Vector::Vector2D<float> topLeftXPos                = Maths::Vector::Vector2D(-startingDistanceFromCentre, -startingDistanceFromCentre);
 
+		unsigned int currentVertexID = 0;
+		bool movementDirectionRight = true;
+
+		for (unsigned int z = 0; z < dimensions - 1; z++)
+		{
+			for (unsigned int x = 0; x < dimensions; x++)
+			{
+				if (currentVertexID > mVertexCount)
+					ASSERTFAIL("error");
+
+				Maths::Vector::Vector2D<float> newPos = topLeftXPos;
+
+				if (movementDirectionRight)
+				{
+					// Do the current position
+					newPos.x += distanceBetweenVertex * x;
+					newPos.y += distanceBetweenVertex * z;
+
+					newData[currentVertexID++] = newPos;
+
+					// Go down on the z
+					newPos.y += distanceBetweenVertex;
+
+					newData[currentVertexID++] = newPos;
+
+					// If this is the last point in the line
+					if (x == dimensions)
+					{
+						// Flip the direction
+						movementDirectionRight = !movementDirectionRight;
+					}
+				}
+				else
+				{
+					newPos.x += distanceBetweenVertex * (dimensions - x);
+					newPos.y += distanceBetweenVertex * (z + 1);
+
+					newData[currentVertexID++] = newPos;
+
+					// Now move back along the line
+					newPos.x -= distanceBetweenVertex;
+					newPos.y -= distanceBetweenVertex;
+
+					newData[currentVertexID++] = newPos;
+
+					// If this is the last point in the line
+					if (x == dimensions)
+					{
+						// Flip the direction
+						movementDirectionRight = !movementDirectionRight;
+					}
+				}
+			}
+		}
 
 		return newData;
 	}
