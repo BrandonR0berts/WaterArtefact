@@ -26,7 +26,7 @@ namespace Rendering
 		// ---------------------------------------------------------------- //
 
 		void                ClearFinalRenderBuffer();
-		void                OnScreenSizeChanged(std::string data);
+		void                OnScreenSizeChanged(Maths::Vector::Vector2D<unsigned int> newSize);
 
 		// ---------------------------------------------------------------- //
 

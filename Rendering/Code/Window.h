@@ -45,7 +45,7 @@ namespace Rendering
 		static void                  ToggleDebugOverlay();
 		static bool                  GetLineMode();
 
-		       void                  OnScreenSizeChanged(std::string data);
+		       void                  OnScreenSizeChanged(Maths::Vector::Vector2D<unsigned int> dimensions);
 
 		static void                  SetWindowBeingResized(bool state) { sWindowBeingResized = state; }
 		static bool                  GetBeingResized()                 { return sWindowBeingResized;  }

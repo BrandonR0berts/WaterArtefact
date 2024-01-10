@@ -293,6 +293,12 @@ namespace Rendering
 						mouse->QueryInput(Input::MouseInput::MouseInputBitfield::MOUSE_LEFT) == Input::ButtonInputState::NO_INPUT)
 					{
 						SetWindowBeingResized(false);
+
+						// Now make sure we resize everything to the right dimensions
+						unsigned int screenWidth  = sRenderPipeline->GetScreenWidth();
+						unsigned int screenHeight = sRenderPipeline->GetScreenHeight();
+
+						sRenderPipeline->OnScreenSizeChanged({ screenWidth, screenHeight });
 					}
 				}
 			}
@@ -386,11 +392,11 @@ namespace Rendering
 
 	// -------------------------------------------------
 
-	void Window::OnScreenSizeChanged(std::string data)
+	void Window::OnScreenSizeChanged(Maths::Vector::Vector2D<unsigned int> dimensions)
 	{
 		if (sRenderPipeline)
 		{
-			sRenderPipeline->OnScreenSizeChanged(data);
+			sRenderPipeline->OnScreenSizeChanged(dimensions);
 		}
 	}
 

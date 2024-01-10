@@ -76,19 +76,13 @@ namespace Rendering
 
 	// -------------------------------------------------
 
-	void RenderPipeline::OnScreenSizeChanged(std::string data)
+	void RenderPipeline::OnScreenSizeChanged(Maths::Vector::Vector2D<unsigned int> newSize)
 	{
 		// Resize the image attachments in the FBO
-		std::string stringWidth  = data.substr(0, data.find_first_of(','));
-		std::string stringHeight = data.substr(data.find_first_of(',') + 1);
+		mFinalRenderFBO->ResizeBuffers(newSize.x, newSize.y);
 
-		unsigned int width  = std::stoul(stringWidth);
-		unsigned int height = std::stoul(stringHeight);
-
-		mFinalRenderFBO->ResizeBuffers(width, height);
-
-		mScreenWidth  = width;
-		mScreenHeight = height;
+		mScreenWidth  = newSize.x;
+		mScreenHeight = newSize.y;
 
 		if(mActiveCamera)
 			mActiveCamera->SetResolution((float)mScreenWidth, (float)mScreenHeight);
