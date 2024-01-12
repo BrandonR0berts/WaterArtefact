@@ -7,14 +7,43 @@ layout(rgba32f, binding = 1) uniform image2D normalOutput;
 layout(rgba32f, binding = 2) uniform image2D tangentOutput;
 layout(rgba32f, binding = 3) uniform image2D binormalOutput;
 
+uniform float amplitude;
+uniform float time;
+uniform float steepnessFactor;
+uniform vec2  directionOfWave;
+uniform float waveLength;
+uniform float speedOfWave;
+
 void main()
 {
-	vec4 testValue = vec4(0.0, 0.0, 0.0, 1.0);
+	vec2 direction = normalize(directionOfWave);
+
+	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
 
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	
-    testValue.x = float(texelCoord.x)/(gl_NumWorkGroups.x);
-    testValue.y = float(texelCoord.y)/(gl_NumWorkGroups.y);
-	
-    imageStore(positionOutput, texelCoord, testValue);
+	// ---------------------------------------------------------- //
+
+	float frequency     = 2.0 / waveLength;
+	float phaseConstant = speedOfWave * frequency;
+
+	float finalX = (steepnessFactor * amplitude * direction.x) * cos(dot((frequency * direction), texelCoord) + phaseConstant * time);
+
+	finalValue.x = finalX;
+
+	// ---------------------------------------------------------- //
+
+	float finalHeight = (steepnessFactor * amplitude * direction.y) * cos(dot((frequency * direction), texelCoord) + (phaseConstant * time));
+
+	finalValue.y = finalHeight;
+
+	// ---------------------------------------------------------- //
+
+	float finalZ = amplitude * sin(dot((frequency * direction), texelCoord) + (phaseConstant * time));
+
+	finalValue.z = finalZ;
+
+	// ---------------------------------------------------------- //
+
+    imageStore(positionOutput, texelCoord, finalValue);
 }

@@ -103,7 +103,9 @@
     <None Include="..\WaterArtefact\Code\Shaders\Vertex\ConvoluteCubeMap_Reflections.vert" />
     <None Include="..\WaterArtefact\Code\Shaders\Vertex\Skybox.vert" />
     <None Include="..\WaterArtefact\Code\Shaders\Vertex\VideoVertexShader.vert" />
-    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface.vert" />
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface_Gersnter.vert" />
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface_Sine.vert" />
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface_Tessendorf.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

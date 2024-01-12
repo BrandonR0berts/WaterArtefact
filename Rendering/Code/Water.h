@@ -43,6 +43,23 @@ namespace Rendering
 		float                          mWaveLength;
 	};
 
+	struct SingleGerstnerWaveData
+	{
+		SingleGerstnerWaveData()
+			: mAmplitude(0.3f)
+			, mDirectionOfWave(0.5f, 0.1f)
+			, mSpeedOfWave(6.0f)
+			, mWaveLength(20.0f)
+		{
+
+		}
+
+		float                          mAmplitude;
+		Maths::Vector::Vector2D<float> mDirectionOfWave;
+		float                          mSpeedOfWave;
+		float                          mWaveLength;
+	};
+
 	// ---------------------------------------
 
 	class WaterSimulation final
@@ -78,6 +95,7 @@ namespace Rendering
 		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Tessendorf;
 
 		ShaderPrograms::ShaderProgram* mActiveWaterModellingApproach;
+		ShaderPrograms::ShaderProgram* mActiveWaterRenderingApproach;
 
 		// Buffer that holds the X-Y-Z output from the compute shader above
 		Texture::Texture2D*            mPositionalBuffer;
@@ -97,13 +115,16 @@ namespace Rendering
 		float mRunningTime;
 
 		// Single sine wave modelling variables
-		SingleSineDataSet mSineWaveData;
+		SingleSineDataSet      mSineWaveData;
+		SingleGerstnerWaveData mGersnterWaveData;
 
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;
 
 		// Shader program used for rendering the surface of the water volume
-		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders;
+		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders_Sine;
+		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders_Gersnter;
+		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders_Tessendorf;
 
 		unsigned int mVertexCount;
 

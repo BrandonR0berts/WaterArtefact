@@ -27,7 +27,10 @@ namespace Rendering
 		, mWaterMovementComputeShader_Sine(nullptr)
 		, mWaterMovementComputeShader_Gerstner(nullptr)
 		, mWaterMovementComputeShader_Tessendorf(nullptr)
+
 		, mActiveWaterModellingApproach(nullptr)
+		, mActiveWaterRenderingApproach(nullptr)
+
 		, mPositionalBuffer(nullptr)
 		, mNormalBuffer(nullptr)
 		, mTangentBuffer(nullptr)
@@ -35,9 +38,13 @@ namespace Rendering
 		, mFFTConfigurations()
 		, mRunningTime(0.0f)
 		, mSineWaveData()
+		, mGersnterWaveData()
 
 		, mWaterVAO(nullptr)
-		, mSurfaceRenderShaders(nullptr)
+
+		, mSurfaceRenderShaders_Sine(nullptr)
+		, mSurfaceRenderShaders_Gersnter(nullptr)
+		, mSurfaceRenderShaders_Tessendorf(nullptr)
 
 		, mSimulationPaused(false)
 		, mWireframe(false)
@@ -58,8 +65,16 @@ namespace Rendering
 	{
 		// --------------------------------------
 
-		delete mSurfaceRenderShaders;
-		mSurfaceRenderShaders = nullptr;
+		delete mSurfaceRenderShaders_Sine;
+		mSurfaceRenderShaders_Sine = nullptr;
+
+		delete mSurfaceRenderShaders_Gersnter;
+		mSurfaceRenderShaders_Gersnter = nullptr;
+
+		delete mSurfaceRenderShaders_Tessendorf;
+		mSurfaceRenderShaders_Tessendorf = nullptr;
+
+		// --------------------------------------
 
 		delete mWaterMovementComputeShader_Sine;
 		mWaterMovementComputeShader_Sine = nullptr;
@@ -70,7 +85,10 @@ namespace Rendering
 		delete mWaterMovementComputeShader_Tessendorf;
 		mWaterMovementComputeShader_Tessendorf = nullptr;
 
+		// --------------------------------------
+
 		mActiveWaterModellingApproach = nullptr;
+		mActiveWaterRenderingApproach = nullptr;
 
 		// --------------------------------------
 
@@ -107,30 +125,83 @@ namespace Rendering
 	{
 		// --------------------------------------------------------------
 
-		if(!mSurfaceRenderShaders)
+		if(!mSurfaceRenderShaders_Sine)
 		{
-			mSurfaceRenderShaders = new ShaderPrograms::ShaderProgram();
+			mSurfaceRenderShaders_Sine = new ShaderPrograms::ShaderProgram();
 
-			Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/WaterSurface.vert");
+			Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/WaterSurface_Sine.vert");
 			Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/WaterSurface.frag");
 
-			mSurfaceRenderShaders->AttachShader(vertexShader);
-			mSurfaceRenderShaders->AttachShader(fragmentShader);
+			mSurfaceRenderShaders_Sine->AttachShader(vertexShader);
+			mSurfaceRenderShaders_Sine->AttachShader(fragmentShader);
 
-				mSurfaceRenderShaders->LinkShadersToProgram();
+				mSurfaceRenderShaders_Sine->LinkShadersToProgram();
 
-			mSurfaceRenderShaders->DetachShader(vertexShader);
-			mSurfaceRenderShaders->DetachShader(fragmentShader);
+			mSurfaceRenderShaders_Sine->DetachShader(vertexShader);
+			mSurfaceRenderShaders_Sine->DetachShader(fragmentShader);
 
 			delete vertexShader;
 			delete fragmentShader;
 
-			mSurfaceRenderShaders->UseProgram();
-				mSurfaceRenderShaders->SetInt("positionalBuffer", 0);
-				mSurfaceRenderShaders->SetInt("normalBuffer",     1);
-				mSurfaceRenderShaders->SetInt("tangentBuffer",    2);
-				mSurfaceRenderShaders->SetInt("binormalBuffer",   3);
+			mSurfaceRenderShaders_Sine->UseProgram();
+				mSurfaceRenderShaders_Sine->SetInt("positionalBuffer", 0);
+				mSurfaceRenderShaders_Sine->SetInt("normalBuffer",     1);
+				mSurfaceRenderShaders_Sine->SetInt("tangentBuffer",    2);
+				mSurfaceRenderShaders_Sine->SetInt("binormalBuffer",   3);
 		}
+
+		if (!mSurfaceRenderShaders_Gersnter)
+		{
+			mSurfaceRenderShaders_Gersnter = new ShaderPrograms::ShaderProgram();
+
+			Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/WaterSurface_Gersnter.vert");
+			Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/WaterSurface.frag");
+
+			mSurfaceRenderShaders_Gersnter->AttachShader(vertexShader);
+			mSurfaceRenderShaders_Gersnter->AttachShader(fragmentShader);
+
+				mSurfaceRenderShaders_Gersnter->LinkShadersToProgram();
+
+			mSurfaceRenderShaders_Gersnter->DetachShader(vertexShader);
+			mSurfaceRenderShaders_Gersnter->DetachShader(fragmentShader);
+
+			delete vertexShader;
+			delete fragmentShader;
+
+			mSurfaceRenderShaders_Gersnter->UseProgram();
+				mSurfaceRenderShaders_Gersnter->SetInt("positionalBuffer", 0);
+				mSurfaceRenderShaders_Gersnter->SetInt("normalBuffer", 1);
+				mSurfaceRenderShaders_Gersnter->SetInt("tangentBuffer", 2);
+				mSurfaceRenderShaders_Gersnter->SetInt("binormalBuffer", 3);
+		}
+
+		if (!mSurfaceRenderShaders_Tessendorf)
+		{
+			mSurfaceRenderShaders_Tessendorf = new ShaderPrograms::ShaderProgram();
+
+			Shaders::VertexShader*   vertexShader   = new Shaders::VertexShader("Code/Shaders/Vertex/WaterSurface_Tessendorf.vert");
+			Shaders::FragmentShader* fragmentShader = new Shaders::FragmentShader("Code/Shaders/Fragment/WaterSurface.frag");
+
+			mSurfaceRenderShaders_Tessendorf->AttachShader(vertexShader);
+			mSurfaceRenderShaders_Tessendorf->AttachShader(fragmentShader);
+
+				mSurfaceRenderShaders_Tessendorf->LinkShadersToProgram();
+
+			mSurfaceRenderShaders_Tessendorf->DetachShader(vertexShader);
+			mSurfaceRenderShaders_Tessendorf->DetachShader(fragmentShader);
+
+			delete vertexShader;
+			delete fragmentShader;
+
+			mSurfaceRenderShaders_Tessendorf->UseProgram();
+				mSurfaceRenderShaders_Tessendorf->SetInt("positionalBuffer", 0);
+				mSurfaceRenderShaders_Tessendorf->SetInt("normalBuffer", 1);
+				mSurfaceRenderShaders_Tessendorf->SetInt("tangentBuffer", 2);
+				mSurfaceRenderShaders_Tessendorf->SetInt("binormalBuffer", 3);
+		}
+
+		mActiveWaterRenderingApproach = mSurfaceRenderShaders_Sine;
+
 		// --------------------------------------------------------------
 
 		if(!mWaterMovementComputeShader_Sine)
@@ -192,20 +263,36 @@ namespace Rendering
 			mWaterVBO = new Buffers::VertexBufferObject();
 
 			unsigned int dimensions            = 2002;
-			float        distanceBetweenPoints = 0.01;
+			float        distanceBetweenPoints = 0.01f;
 			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(dimensions, distanceBetweenPoints);
 
 			mWaterVBO->SetBufferData((void*)vertexData, mVertexCount * sizeof(Maths::Vector::Vector2D<float>), GL_STATIC_DRAW);
 
-			if (mSurfaceRenderShaders)
-			{
-				bool         evenSplit                  = dimensions % 2 == 0;
-				unsigned int halfDimensions             = dimensions / 2;
-				float        startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenPoints) + 0.5f : halfDimensions * distanceBetweenPoints;
+			// ----------------
 
-				mSurfaceRenderShaders->UseProgram();
-				mSurfaceRenderShaders->SetFloat("maxDistanceFromOrigin", startingDistanceFromCentre);
+			bool         evenSplit                  = dimensions % 2 == 0;
+			unsigned int halfDimensions             = dimensions / 2;
+			float        startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenPoints) + 0.5f : halfDimensions * distanceBetweenPoints;
+
+			if (mSurfaceRenderShaders_Sine)
+			{
+				mSurfaceRenderShaders_Sine->UseProgram();
+					mSurfaceRenderShaders_Sine->SetFloat("maxDistanceFromOrigin", startingDistanceFromCentre);
 			}
+
+			if (mSurfaceRenderShaders_Gersnter)
+			{
+				mSurfaceRenderShaders_Gersnter->UseProgram();
+					mSurfaceRenderShaders_Gersnter->SetFloat("maxDistanceFromOrigin", startingDistanceFromCentre);
+			}
+
+			if (mSurfaceRenderShaders_Tessendorf)
+			{
+				mSurfaceRenderShaders_Tessendorf->UseProgram();
+					mSurfaceRenderShaders_Tessendorf->SetFloat("maxDistanceFromOrigin", startingDistanceFromCentre);
+			}
+
+			// ----------------
 
 			delete[] vertexData;
 		}
@@ -267,16 +354,19 @@ namespace Rendering
 				if (ImGui::Button("Sine Waves"))
 				{
 					mActiveWaterModellingApproach = mWaterMovementComputeShader_Sine;
+					mActiveWaterRenderingApproach = mSurfaceRenderShaders_Sine;
 				}
 
 				if (ImGui::Button("Gerstner Waves"))
 				{
 					mActiveWaterModellingApproach = mWaterMovementComputeShader_Gerstner;
+					mActiveWaterRenderingApproach = mSurfaceRenderShaders_Gersnter;
 				}
 
 				if (ImGui::Button("Ocean simulation"))
 				{
 					mActiveWaterModellingApproach = mWaterMovementComputeShader_Tessendorf;
+					mActiveWaterRenderingApproach = mSurfaceRenderShaders_Tessendorf;
 				}
 			}
 		ImGui::End();
@@ -287,19 +377,27 @@ namespace Rendering
 
 				if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Sine)
 				{
-					ImGui::InputFloat("Amplitude",  &mSineWaveData.mAmplitude);
-					ImGui::InputFloat2("Direction", &mSineWaveData.mDirectionOfWave.x);
-					ImGui::InputFloat("Speed",      &mSineWaveData.mSpeedOfWave);
-					ImGui::InputFloat("Wavelength", &mSineWaveData.mWaveLength);
+					ImGui::InputFloat("Amplitude##Sine",  &mSineWaveData.mAmplitude);
+					ImGui::InputFloat2("Direction##Sine", &mSineWaveData.mDirectionOfWave.x);
+					ImGui::InputFloat("Speed##Sine",      &mSineWaveData.mSpeedOfWave);
+					ImGui::InputFloat("Wavelength##Sine", &mSineWaveData.mWaveLength);
 
-					if (ImGui::Button("Defaults"))
+					if (ImGui::Button("Defaults##Sine"))
 					{
 						mSineWaveData = SingleSineDataSet();
 					}
 				}
 				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Gerstner)
 				{
+					ImGui::InputFloat("Amplitude##Gersnter",  &mGersnterWaveData.mAmplitude);
+					ImGui::InputFloat2("Direction##Gersnter", &mGersnterWaveData.mDirectionOfWave.x);
+					ImGui::InputFloat("Speed##Gersnter",      &mGersnterWaveData.mSpeedOfWave);
+					ImGui::InputFloat("Wavelength##Gersnter", &mGersnterWaveData.mWaveLength);
 
+					if (ImGui::Button("Defaults##Gersnter"))
+					{
+						mGersnterWaveData = SingleGerstnerWaveData();
+					}
 				}
 				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Tessendorf)
 				{
@@ -325,10 +423,24 @@ namespace Rendering
 
 			mActiveWaterModellingApproach->SetFloat("time", mRunningTime);
 
-			mActiveWaterModellingApproach->SetFloat("amplitude",      mSineWaveData.mAmplitude);
-			mActiveWaterModellingApproach->SetVec2("directionOfWave", mSineWaveData.mDirectionOfWave);
-			mActiveWaterModellingApproach->SetFloat("speedOfWave",    mSineWaveData.mSpeedOfWave);
-			mActiveWaterModellingApproach->SetFloat("waveLength",     mSineWaveData.mWaveLength);
+			if(mActiveWaterModellingApproach == mWaterMovementComputeShader_Sine)
+			{
+				mActiveWaterModellingApproach->SetFloat("amplitude",      mSineWaveData.mAmplitude);
+				mActiveWaterModellingApproach->SetVec2("directionOfWave", mSineWaveData.mDirectionOfWave);
+				mActiveWaterModellingApproach->SetFloat("speedOfWave",    mSineWaveData.mSpeedOfWave);
+				mActiveWaterModellingApproach->SetFloat("waveLength",     mSineWaveData.mWaveLength);
+			}
+			else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Gerstner)
+			{
+				mActiveWaterModellingApproach->SetFloat("amplitude",      mGersnterWaveData.mAmplitude);
+				mActiveWaterModellingApproach->SetVec2("directionOfWave", mGersnterWaveData.mDirectionOfWave);
+				mActiveWaterModellingApproach->SetFloat("speedOfWave",    mGersnterWaveData.mSpeedOfWave);
+				mActiveWaterModellingApproach->SetFloat("waveLength",     mGersnterWaveData.mWaveLength);
+			}
+			else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Tessendorf)
+			{
+
+			}
 
 			mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 			//mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
@@ -354,7 +466,7 @@ namespace Rendering
 
 		mWaterVAO->Bind();
 
-		mSurfaceRenderShaders->UseProgram();
+		mActiveWaterRenderingApproach->UseProgram();
 
 			OpenGLRenderPipeline* renderPipeline = ((OpenGLRenderPipeline*)Window::GetRenderPipeline());
 
@@ -368,13 +480,13 @@ namespace Rendering
 
 			// Matricies
 			Maths::Matrix::Matrix4X4 identity = Maths::Matrix::Matrix4X4();
-			mSurfaceRenderShaders->SetMat4("modelMat", &identity[0]);
+			mActiveWaterRenderingApproach->SetMat4("modelMat", &identity[0]);
 
 			glm::mat4 viewMat = camera->GetViewMatrix();
-			mSurfaceRenderShaders->SetMat4("viewMat", &viewMat[0][0]);
+			mActiveWaterRenderingApproach->SetMat4("viewMat", &viewMat[0][0]);
 
 			glm::mat4 projectionMat = camera->GetPerspectiveMatrix();
-			mSurfaceRenderShaders->SetMat4("projectionMat", &projectionMat[0][0]);
+			mActiveWaterRenderingApproach->SetMat4("projectionMat", &projectionMat[0][0]);
 
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, mVertexCount);
 
