@@ -262,8 +262,8 @@ namespace Rendering
 		{
 			mWaterVBO = new Buffers::VertexBufferObject();
 
-			unsigned int dimensions            = 2002;
-			float        distanceBetweenPoints = 0.01f;
+			unsigned int dimensions            = 200;
+			float        distanceBetweenPoints = 0.1f;
 			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(dimensions, distanceBetweenPoints);
 
 			mWaterVBO->SetBufferData((void*)vertexData, mVertexCount * sizeof(Maths::Vector::Vector2D<float>), GL_STATIC_DRAW);
