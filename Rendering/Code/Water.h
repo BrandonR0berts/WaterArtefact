@@ -22,28 +22,37 @@ namespace Rendering
 	{
 		class VertexBufferObject;
 		class VertexArrayObject;
+		class ShaderStorageBufferObject;
 	}
 
 	class Camera;
 
-	struct SingleSineDataSet
+	// ---------------------------------------
+
+	struct SingleSineDataSet final
 	{
 		SingleSineDataSet()
 			: mAmplitude(0.1f)
-			, mDirectionOfWave(1.0f, 0.0f)
-			, mSpeedOfWave(10.0f)
+			, mSteepnessFactor(1.0f)
 			, mWaveLength(9.0f)
+			, mSpeedOfWave(10.0f)
+			, mDirectionOfWave(1.0f, 0.0f)
+			, padding1(0.0f)
+			, padding2(0.0f)
 		{
 
 		}
 
 		float                          mAmplitude;
-		Maths::Vector::Vector2D<float> mDirectionOfWave;
-		float                          mSpeedOfWave;
+		float                          mSteepnessFactor;
 		float                          mWaveLength;
+		float                          mSpeedOfWave;
+		Maths::Vector::Vector2D<float> mDirectionOfWave;
+		float padding1;
+		float padding2;
 	};
 
-	struct SingleGerstnerWaveData
+	struct SingleGerstnerWaveData final
 	{
 		SingleGerstnerWaveData()
 			: mAmplitude(0.3f)
@@ -58,6 +67,23 @@ namespace Rendering
 		Maths::Vector::Vector2D<float> mDirectionOfWave;
 		float                          mSpeedOfWave;
 		float                          mWaveLength;
+	};
+
+	struct TessendorfWaveData final
+	{
+		TessendorfWaveData()
+			: mWaveCount(5)
+			, mWindVelocity(15.0f, 0.0f)
+			, mGravity(9.81f)
+			, mRepeatAfterTime(10.0f)
+		{
+
+		}
+
+		int                            mWaveCount;
+		Maths::Vector::Vector2D<float> mWindVelocity;
+		float                          mGravity;
+		float                          mRepeatAfterTime;
 	};
 
 	// ---------------------------------------
@@ -75,12 +101,17 @@ namespace Rendering
 
 		bool IsBelowSurface(Maths::Vector::Vector3D<float> position);
 
+		Texture::Texture2D* GetPositionalBuffer() { return mPositionalBuffer; }
+
 	private:
 		void PerformanceTesting();
 
 		void SetupBuffers();
 		void SetupShaders();
 		void SetupTextures();
+
+		void UpdateSineWaveDataSet();
+		void UpdateGerstnerWaveDataSet();
 
 		Maths::Vector::Vector2D<float>* GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex);
 
@@ -115,8 +146,13 @@ namespace Rendering
 		float mRunningTime;
 
 		// Single sine wave modelling variables
-		SingleSineDataSet      mSineWaveData;
-		SingleGerstnerWaveData mGersnterWaveData;
+		std::vector<SingleSineDataSet>      mSineWaveData;
+		Buffers::ShaderStorageBufferObject* mSineWaveSSBO;
+
+		std::vector<SingleGerstnerWaveData> mGersnterWaveData;
+		Buffers::ShaderStorageBufferObject* mGerstnerWaveSSBO;
+
+		TessendorfWaveData     mTessendorfData;
 
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;

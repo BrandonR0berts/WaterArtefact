@@ -7,40 +7,66 @@ layout(rgba32f, binding = 1) uniform image2D normalOutput;
 layout(rgba32f, binding = 2) uniform image2D tangentOutput;
 layout(rgba32f, binding = 3) uniform image2D binormalOutput;
 
-uniform float amplitude;
 uniform float time;
-uniform float steepnessFactor;
-uniform vec2  directionOfWave;
-uniform float waveLength;
-uniform float speedOfWave;
+
+struct GerstnerWaveData
+{
+	float amplitude;
+	float steepnessFactor;
+	vec2  directionOfWave;
+	float waveLength;
+	float speedOfWave;
+};
+
+layout (std430, binding = 5) buffer WaveData
+{
+	// Needs to be a vec4 to obey the packing rules - x = directional light count, y = point light count
+	// Data is ordered with the directional lights first, then the point light data
+	vec4             waveCount;
+	GerstnerWaveData waves[];
+};
 
 void main()
 {
-	vec2 direction = normalize(directionOfWave);
-
 	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
 
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	
 	// ---------------------------------------------------------- //
 
-	float frequency     = 2.0 / waveLength;
-	float phaseConstant = speedOfWave * frequency;
+	float finalX = 0.0;
+	float finalY = 0.0;
+	float finalZ = 0.0;
 
-	float finalX = (steepnessFactor * amplitude * direction.x) * cos(dot((frequency * direction), texelCoord) + phaseConstant * time);
+	// ---------------------------------------------------------- //
+
+	for(int i = 0; i < waveCount.x; i++)
+	{
+		// ---------------------------------------------------------- //
+
+		vec2 direction = normalize(waves[i].directionOfWave);
+
+		float frequency     = 2.0 / waves[i].waveLength;
+		float phaseConstant = waves[i].speedOfWave * frequency;
+
+		float x = (waves[i].steepnessFactor * waves[i].amplitude * direction.x) * cos(dot((frequency * direction), texelCoord) + phaseConstant * time);
+		finalX += x;
+
+		// ---------------------------------------------------------- //
+
+		float height = (waves[i].steepnessFactor * waves[i].amplitude * direction.y) * cos(dot((frequency * direction), texelCoord) + (phaseConstant * time));
+		finalY += height;
+
+		// ---------------------------------------------------------- //
+
+		float z = waves[i].amplitude * sin(dot((frequency * direction), texelCoord) + (phaseConstant * time));
+		finalY += z;
+	}
+
+	// ---------------------------------------------------------- //
 
 	finalValue.x = finalX;
-
-	// ---------------------------------------------------------- //
-
-	float finalHeight = (steepnessFactor * amplitude * direction.y) * cos(dot((frequency * direction), texelCoord) + (phaseConstant * time));
-
-	finalValue.y = finalHeight;
-
-	// ---------------------------------------------------------- //
-
-	float finalZ = amplitude * sin(dot((frequency * direction), texelCoord) + (phaseConstant * time));
-
+	finalValue.y = finalY;
 	finalValue.z = finalZ;
 
 	// ---------------------------------------------------------- //

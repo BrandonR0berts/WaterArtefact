@@ -8,22 +8,42 @@ layout(rgba32f, binding = 2) uniform image2D tangentOutput;
 layout(rgba32f, binding = 3) uniform image2D binormalOutput;
 
 uniform float time;
-uniform float amplitude;
-uniform vec2  directionOfWave;
-uniform float speedOfWave;
-uniform float waveLength;
+uniform int waveCount;
+
+struct SineWaveData
+{
+	float amplitude;
+	float steepnessFactor;
+	float waveLength;
+	float speedOfWave;
+
+	float directionOfWaveX;
+	float directionOfWaveZ;
+	float padding1;
+	float padding2;
+};
+
+layout (std430, binding = 5) readonly buffer WaveData
+{
+	SineWaveData waves[];
+};
 
 void main()
 {
-	vec2 direction = normalize(directionOfWave);
-
-	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
-
+	vec4 finalValue  = vec4(0.0, 0.0, 0.0, 1.0);
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+
+	float finalHeight = 0.0;
+
+	for(int i = 0; i < waveCount; i++)
+	{
+		vec2 direction = normalize(vec2(waves[i].directionOfWaveX, waves[i].directionOfWaveZ));
 	
-	float frequency     = 2.0 / waveLength;
-	float phaseConstant = speedOfWave * frequency;
-	float finalHeight   = amplitude * sin((dot(direction, texelCoord) * frequency) + (time * phaseConstant));
+		float frequency     = 2.0 / waves[i].waveLength;
+		float phaseConstant = waves[i].speedOfWave * frequency;
+
+		finalHeight += waves[i].amplitude * sin((dot(direction, texelCoord) * frequency) + (time * phaseConstant));
+	}
 
 	finalValue.y = finalHeight;
 

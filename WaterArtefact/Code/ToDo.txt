@@ -2,5 +2,4 @@
 - Determine which sections need their times captured
 - Create functionality for running a test that ImGui will hook into
 
-- Fix resizing code
 - Adjust the vertex generation code to fix issues when going diagonal wave directions

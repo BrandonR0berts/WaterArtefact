@@ -2,19 +2,118 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
+// --------------------------------------------------------------------------------
+
 layout(rgba32f, binding = 0) uniform image2D positionOutput;
 layout(rgba32f, binding = 1) uniform image2D normalOutput;
 layout(rgba32f, binding = 2) uniform image2D tangentOutput;
 layout(rgba32f, binding = 3) uniform image2D binormalOutput;
 
+// --------------------------------------------------------------------------------
+
+uniform float time;
+uniform float maxDistanceFromOrigin;
+
+uniform float repeatAfterTime;
+uniform vec2  windVelocity;
+uniform int   waveCount;
+uniform float gravity;
+
+// --------------------------------------------------------------------------------
+
+const float phillipsConstant = 1.0;
+const float oneOverRootTwo   = 1.0 / sqrt(2.0);
+const float PI               = 3.141529;
+
+const float fractionOfTime          = time - floor(time);
+const float dispersionRelation_zero = (2.0 * PI) / repeatAfterTime;;
+
+// --------------------------------------------------------------------------------
+
+float FFT(float value, vec2 worldPosition, vec2 k)
+{
+	return value * exp(dot(k, worldPosition));
+}
+
+// --------------------------------------------------------------------------------
+
+// The noise functions are depricated within this version of glsl, so they just return 0
+// So instead this is a custom random number generator
+float RandomNumber(vec2 seed)
+{
+	return fract(sin(dot(seed.xy, vec2(fractionOfTime, 78.233))) * 43758.5453123);
+}
+
+// --------------------------------------------------------------------------------
+
+float PhillipsSpectrum(vec2 k, int waveNumber)
+{
+	vec2  windDirection = normalize(windVelocity);
+	float windSpeed     = length(windVelocity);
+
+	float L             = (windSpeed * windSpeed) / gravity;
+	float KL            = waveNumber * L;
+
+	return phillipsConstant * (exp(-1.0 / (KL * KL))) / pow(waveNumber, 4) * abs(dot(k, windDirection));
+}
+
+// --------------------------------------------------------------------------------
+
+// Fourier amplitudes of a wave height field
+float hZero(vec2 k, int waveNumber, vec2 randomNumberSeed)
+{
+	return oneOverRootTwo * (RandomNumber(randomNumberSeed) + RandomNumber(randomNumberSeed)) * sqrt(PhillipsSpectrum(k, waveNumber));
+}
+
+// --------------------------------------------------------------------------------
+
+// Fourier amplitude function
+float heightFunction(vec2 k, float dispersionRelation, int waveNumber, vec2 randomNumberSeed)
+{
+	return (hZero(k, waveNumber, randomNumberSeed) * exp(dispersionRelation * time)) + (hZero(-k, waveNumber, randomNumberSeed) * exp(-dispersionRelation * time));
+}
+
+// --------------------------------------------------------------------------------
+
 void main()
 {
-	vec4 testValue = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
 
+	// 0 -> 1 position for the point on the texture
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-	
-    testValue.x = float(texelCoord.x)/(gl_NumWorkGroups.x);
-    testValue.y = float(texelCoord.y)/(gl_NumWorkGroups.y);
-	
-    imageStore(positionOutput, texelCoord, testValue);
+
+	vec2 pixelCoord = vec2(float(texelCoord.x) / (gl_NumWorkGroups.x),  float(texelCoord.y) / (gl_NumWorkGroups.y));
+
+	// Map the position to a position in the same style as the height map is defined as
+	vec2 mappedTexelCoord = vec2((pixelCoord.x * 2.0) - 1.0, (pixelCoord.y * 2.0) - 1.0);
+
+	// Now transform the position into a world position
+	vec2 worldPos         = vec2(maxDistanceFromOrigin * mappedTexelCoord.x, maxDistanceFromOrigin * mappedTexelCoord.y);
+
+	// ---------------------------------------------------------- //
+
+	float finalHeight = 0.0;
+
+	float L = maxDistanceFromOrigin * 2.0;
+	vec2  k = texelCoord; // Not sure on this
+
+	// Go through each wave
+	for(int i = 0; i < waveCount; i++)
+	{
+		// Dispersion relation, where non-bold 'k' is the wave number
+		float dispersionRelation = floor(sqrt(gravity * i)) * dispersionRelation_zero;
+		
+		// Accumulate the height
+		finalHeight += FFT(heightFunction(k, dispersionRelation, i, texelCoord), worldPos, k);
+	}
+
+	// ---------------------------------------------------------- //
+
+	finalValue.y = PhillipsSpectrum(k, 16);
+
+	// ---------------------------------------------------------- //
+
+    imageStore(positionOutput, texelCoord, finalValue);
 }
+
+// --------------------------------------------------------------------------------

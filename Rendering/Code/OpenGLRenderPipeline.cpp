@@ -355,7 +355,8 @@ namespace Rendering
 		// Use this program
 		mFinalRenderProgram->UseProgram();
 
-		BindTextureToTextureUnit(GL_TEXTURE0, mFinalRenderFBO->GetColourBuffer()->GetTextureID());
+		//BindTextureToTextureUnit(GL_TEXTURE0, mFinalRenderFBO->GetColourBuffer()->GetTextureID());
+		BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetPositionalBuffer()->GetTextureID());
 
 		//float*    projMatrix = &GetActiveCamera()->GetOrthoMatrix()[0][0];
 		glm::mat4 model = glm::mat4(1.0f);

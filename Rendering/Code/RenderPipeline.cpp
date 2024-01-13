@@ -87,4 +87,6 @@ namespace Rendering
 		if(mActiveCamera)
 			mActiveCamera->SetResolution((float)mScreenWidth, (float)mScreenHeight);
 	}
+
+	// -------------------------------------------------
 }
