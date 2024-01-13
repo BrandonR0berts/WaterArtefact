@@ -3,3 +3,15 @@
 - Create functionality for running a test that ImGui will hook into
 
 - Adjust the vertex generation code to fix issues when going diagonal wave directions
+
+- Add summing of multiple gerstner waves
+- Add presets for sine waves
+- Add presets for gerstner waves
+
+- Add tessendorf appraoch
+	- Solve how to represent an FFT (and complex numbers) in code
+
+- Add outputting of normals and tangents from the compute shaders
+	- Sine waves
+	- Gerstner waves
+	- Tessendorf approach

@@ -37,7 +37,10 @@ void main()
 
 	for(int i = 0; i < waveCount; i++)
 	{
-		vec2 direction = normalize(vec2(waves[i].directionOfWaveX, waves[i].directionOfWaveZ));
+		vec2 direction = vec2(1.0, 1.0);
+
+		if(waves[i].directionOfWaveX > 0.0 || waves[i].directionOfWaveZ > 0.0)
+			direction = normalize(vec2(waves[i].directionOfWaveX, waves[i].directionOfWaveZ));
 	
 		float frequency     = 2.0 / waves[i].waveLength;
 		float phaseConstant = waves[i].speedOfWave * frequency;

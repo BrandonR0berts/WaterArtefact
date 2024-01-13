@@ -8,21 +8,22 @@ layout(rgba32f, binding = 2) uniform image2D tangentOutput;
 layout(rgba32f, binding = 3) uniform image2D binormalOutput;
 
 uniform float time;
+uniform int waveCount;
 
 struct GerstnerWaveData
 {
 	float amplitude;
 	float steepnessFactor;
-	vec2  directionOfWave;
-	float waveLength;
 	float speedOfWave;
+	float waveLength;
+	float directionOfWaveX;
+	float directionOfWaveZ;
+	float padding1;
+	float padding2;
 };
 
 layout (std430, binding = 5) buffer WaveData
 {
-	// Needs to be a vec4 to obey the packing rules - x = directional light count, y = point light count
-	// Data is ordered with the directional lights first, then the point light data
-	vec4             waveCount;
 	GerstnerWaveData waves[];
 };
 
@@ -44,7 +45,10 @@ void main()
 	{
 		// ---------------------------------------------------------- //
 
-		vec2 direction = normalize(waves[i].directionOfWave);
+		vec2 direction = vec2(1.0, 1.0);
+
+		if(waves[i].directionOfWaveX > 0.0 || waves[i].directionOfWaveZ > 0.0)
+			direction = normalize(vec2(waves[i].directionOfWaveX, waves[i].directionOfWaveZ));
 
 		float frequency     = 2.0 / waves[i].waveLength;
 		float phaseConstant = waves[i].speedOfWave * frequency;
@@ -66,8 +70,8 @@ void main()
 	// ---------------------------------------------------------- //
 
 	finalValue.x = finalX;
-	finalValue.y = finalY;
-	finalValue.z = finalZ;
+	finalValue.z = finalY;
+	finalValue.y = finalZ;
 
 	// ---------------------------------------------------------- //
 

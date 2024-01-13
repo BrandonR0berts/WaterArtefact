@@ -56,17 +56,21 @@ namespace Rendering
 	{
 		SingleGerstnerWaveData()
 			: mAmplitude(0.3f)
-			, mDirectionOfWave(0.5f, 0.1f)
+			, mSteepness(0.3f)
 			, mSpeedOfWave(6.0f)
 			, mWaveLength(20.0f)
+			, mDirectionOfWave(0.5f, 0.1f)
+			, mPadding()
 		{
 
 		}
 
 		float                          mAmplitude;
-		Maths::Vector::Vector2D<float> mDirectionOfWave;
+		float                          mSteepness;
 		float                          mSpeedOfWave;
 		float                          mWaveLength;
+		Maths::Vector::Vector2D<float> mDirectionOfWave;
+		Maths::Vector::Vector2D<float> mPadding;
 	};
 
 	struct TessendorfWaveData final

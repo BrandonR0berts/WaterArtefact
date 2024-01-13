@@ -51,7 +51,7 @@ namespace Rendering
 		mActiveCamera = new DebugCamera(0.01f, 500.0f, 1920.0f, 1080.0f, 16.0f / 9.0f, 70.0f,
 									   Maths::Vector::Vector3D<float>(0.0f, 1.0f, 0.0f),
 									   Maths::Vector::Vector3D<float>(0.0f, 0.0f, -1.0f),
-									   Maths::Vector::Vector3D<float>(0.0f, 0.0f, 1.0f));
+									   Maths::Vector::Vector3D<float>(0.0f, 5.0f, 0.0f));
 
 		SetupUsefulVBOData();
 	}

@@ -352,9 +352,7 @@ namespace Rendering
 
 	void WaterSimulation::UpdateSineWaveDataSet()
 	{
-		unsigned int waveCount = (unsigned int)mSineWaveData.size();
-
-		// Allocate the right amount of memory
+		unsigned int waveCount   = (unsigned int)mSineWaveData.size();
 		unsigned int bytesInData = sizeof(SingleSineDataSet) * waveCount;
 
 		SingleSineDataSet* newData = new SingleSineDataSet[waveCount];
@@ -373,7 +371,19 @@ namespace Rendering
 
 	void WaterSimulation::UpdateGerstnerWaveDataSet()
 	{
+		unsigned int waveCount   = (unsigned int)mGersnterWaveData.size();
+		unsigned int bytesInData = sizeof(SingleGerstnerWaveData) * waveCount;
 
+		SingleGerstnerWaveData* newData = new SingleGerstnerWaveData[waveCount];
+
+		for (int i = 0; i < waveCount; i++)
+		{
+			newData[i] = mGersnterWaveData[i];
+		}
+
+		mGerstnerWaveSSBO->SetBufferData(newData, bytesInData, GL_DYNAMIC_DRAW);
+
+		delete[] newData;
 	}
 
 	// ---------------------------------------------
@@ -491,15 +501,57 @@ namespace Rendering
 				}
 				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Gerstner)
 				{
-					/*ImGui::InputFloat("Amplitude##Gersnter",  &mGersnterWaveData.mAmplitude);
-					ImGui::InputFloat2("Direction##Gersnter", &mGersnterWaveData.mDirectionOfWave.x);
-					ImGui::InputFloat("Speed##Gersnter",      &mGersnterWaveData.mSpeedOfWave);
-					ImGui::InputFloat("Wavelength##Gersnter", &mGersnterWaveData.mWaveLength);
+					bool changed = false;
 
-					if (ImGui::Button("Defaults##Gersnter"))
+					if (ImGui::CollapsingHeader("Gerstner wave data"))
 					{
-						mGersnterWaveData = SingleGerstnerWaveData();
-					}*/
+						unsigned int waveCount = (unsigned int)mGersnterWaveData.size();
+						for (unsigned int i = 0; i < waveCount; i++)
+						{
+							ImGui::Text("-------------------------------------------------------");
+
+							std::string stringI = std::to_string(i);
+
+							if (ImGui::InputFloat(("Amplitude##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mAmplitude))
+								changed = true;
+
+							if (ImGui::InputFloat2(("Direction##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mDirectionOfWave.x))
+								changed = true;
+
+							if (ImGui::InputFloat(("Speed##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mSpeedOfWave))
+								changed = true;
+
+							if (ImGui::InputFloat(("Wavelength##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mWaveLength))
+								changed = true;
+
+							if (ImGui::InputFloat(("Steepness##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mSteepness))
+								changed = true;
+
+							if (ImGui::Button(("Remove wave##Gerstner" + stringI).c_str()))
+							{
+								mGersnterWaveData.erase(mGersnterWaveData.begin() + i);
+								UpdateGerstnerWaveDataSet();
+
+								changed = false;
+
+								break;
+							}
+
+							ImGui::Text("-------------------------------------------------------");
+						}
+
+						if (ImGui::Button("Add new wave##Gerstner"))
+						{
+							mGersnterWaveData.push_back(SingleGerstnerWaveData());
+
+							changed = true;
+						}
+
+						if (changed)
+						{
+							UpdateGerstnerWaveDataSet();
+						}
+					}
 				}
 				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Tessendorf)
 				{
@@ -544,6 +596,8 @@ namespace Rendering
 			{
 				if(mGerstnerWaveSSBO)
 					mGerstnerWaveSSBO->BindToBufferIndex(5);
+
+				mActiveWaterModellingApproach->SetInt("waveCount", (int)mGersnterWaveData.size());
 			}
 			else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Tessendorf)
 			{
