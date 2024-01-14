@@ -390,14 +390,35 @@ namespace Rendering
 
 	void WaterSimulation::SetupTextures()
 	{
+		unsigned int width  = 1000;
+		unsigned int height = 1000;
+
 		if (!mPositionalBuffer)
 		{
 			mPositionalBuffer = new Texture::Texture2D();
 
-			unsigned int width  = 1000;
-			unsigned int height = 1000;
-
 			mPositionalBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+		}
+
+		if (!mNormalBuffer)
+		{
+			mNormalBuffer = new Texture::Texture2D();
+
+			mNormalBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+		}
+
+		if (!mTangentBuffer)
+		{
+			mTangentBuffer = new Texture::Texture2D();
+
+			mTangentBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+		}
+
+		if (!mBiNormalBuffer)
+		{
+			mBiNormalBuffer = new Texture::Texture2D();
+
+			mBiNormalBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
 		}
 	}
 
@@ -608,9 +629,9 @@ namespace Rendering
 			}
 
 			mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			//mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			//mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			//mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+			mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+			mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+			mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
 		glDispatchCompute(1000, 1000, 1);
 	}
@@ -620,8 +641,8 @@ namespace Rendering
 	void WaterSimulation::Render(Rendering::Camera* camera)
 	{
 		// Existance checks
-		//if (!mWaterVAO || !mWaterVBO || !mPositionalBuffer || !mNormalBuffer || !mTangentBuffer || !mBiNormalBuffer || !mSurfaceRenderShaders)
-		//	return;
+		if (!mWaterVAO || !mWaterVBO || !mPositionalBuffer || !mNormalBuffer || !mTangentBuffer || !mBiNormalBuffer || !mActiveWaterRenderingApproach)
+			return;
 
 		// Rendering of the surface is done through passing the positional texture into the vertex shader to create the final world position
 		// Then the fragment shader used information given to it from the other textures output by the compute shader
@@ -639,9 +660,9 @@ namespace Rendering
 
 			// Textures
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mPositionalBuffer->GetTextureID(), true);
-			//renderPipeline->BindTextureToTextureUnit(mNormalBuffer->GetTextureID(), 1, true);
-			//renderPipeline->BindTextureToTextureUnit(mTangentBuffer->GetTextureID(), 2, true);
-			//renderPipeline->BindTextureToTextureUnit(mBiNormalBuffer->GetTextureID(), 3, true);
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE1, mNormalBuffer->GetTextureID(),     true);
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE2, mTangentBuffer->GetTextureID(),    true);
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE3, mBiNormalBuffer->GetTextureID(),   true);
 
 			// Matricies
 			Maths::Matrix::Matrix4X4 identity = Maths::Matrix::Matrix4X4();

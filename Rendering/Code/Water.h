@@ -106,6 +106,9 @@ namespace Rendering
 		bool IsBelowSurface(Maths::Vector::Vector3D<float> position);
 
 		Texture::Texture2D* GetPositionalBuffer() { return mPositionalBuffer; }
+		Texture::Texture2D* GetNormalBuffer()     { return mNormalBuffer;     }
+		Texture::Texture2D* GetTangentBuffer()    { return mTangentBuffer;    }
+		Texture::Texture2D* GetBinormalBuffer()   { return mBiNormalBuffer;   }
 
 	private:
 		void PerformanceTesting();

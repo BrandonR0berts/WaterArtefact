@@ -352,6 +352,35 @@ namespace Rendering
 	{
 		if (mWaterSimulation)
 			mWaterSimulation->RenderDebugMenu();
+
+		ImGui::Begin("Buffer visualisations");
+
+			if (ImGui::Button("View positional buffer"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::Position;
+			}
+
+			if (ImGui::Button("View normal buffer"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::Normal;
+			}
+
+			if (ImGui::Button("View tangent buffer"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::Tangent;
+			}
+
+			if (ImGui::Button("View binormal buffer"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::Binormal;
+			}
+
+			if (ImGui::Button("Reset"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::None;
+			}
+
+		ImGui::End();
 	}
 
 	// -------------------------------------------------
@@ -369,8 +398,28 @@ namespace Rendering
 		// Use this program
 		mFinalRenderProgram->UseProgram();
 
-		BindTextureToTextureUnit(GL_TEXTURE0, mFinalRenderFBO->GetColourBuffer()->GetTextureID());
-		//BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetPositionalBuffer()->GetTextureID());
+		switch (mDebugVisualisationOverride)
+		{
+		case BufferViewOverrideTypes::None:
+			BindTextureToTextureUnit(GL_TEXTURE0, mFinalRenderFBO->GetColourBuffer()->GetTextureID());
+		break;
+
+		case BufferViewOverrideTypes::Position:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetPositionalBuffer()->GetTextureID());
+		break;
+
+		case BufferViewOverrideTypes::Normal:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetNormalBuffer()->GetTextureID());
+			break;
+
+		case BufferViewOverrideTypes::Tangent:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetTangentBuffer()->GetTextureID());
+			break;
+
+		case BufferViewOverrideTypes::Binormal:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetBinormalBuffer()->GetTextureID());
+			break;
+		}
 
 		//float*    projMatrix = &GetActiveCamera()->GetOrthoMatrix()[0][0];
 		glm::mat4 model = glm::mat4(1.0f);

@@ -27,6 +27,18 @@ namespace Rendering
 
 	class Skybox;
 
+	// -----------------------------------------
+
+	enum class BufferViewOverrideTypes
+	{
+		None = 0,
+		Position,
+		Normal,
+		Tangent,
+		Binormal
+	};
+
+	// -----------------------------------------
 
 	// This is the main game render flow, which hooks into the current level to grab the data about what should be being rendered
 	class OpenGLRenderPipeline final : public RenderPipeline
@@ -97,6 +109,8 @@ namespace Rendering
 
 		WaterSimulation*    mWaterSimulation;
 		Skybox*             mSkybox;
+
+		BufferViewOverrideTypes mDebugVisualisationOverride;
 
 		// ---------------------------------------------------------------- //
 

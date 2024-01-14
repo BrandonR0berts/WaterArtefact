@@ -1,10 +1,8 @@
-// Testing data collection //
 - Determine which sections need their times captured
 - Create functionality for running a test that ImGui will hook into
 
-- Adjust the vertex generation code to fix issues when going diagonal wave directions
+- Fix vertex generation code
 
-- Add summing of multiple gerstner waves
 - Add presets for sine waves
 - Add presets for gerstner waves
 
@@ -15,3 +13,10 @@
 	- Sine waves
 	- Gerstner waves
 	- Tessendorf approach
+
+- Add imgui way of swapping skyboxes
+
+- Add water reflection
+- Add water refraction
+
+- Add imgui way to swap between generated buffers
