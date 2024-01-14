@@ -17,6 +17,8 @@
 #include "Skybox.h"
 #include "Framebuffers.h"
 
+#include "Rendering/Code/Skybox.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -44,6 +46,7 @@ namespace Rendering
 		, mFinalRenderProgram(nullptr)
 
 		, mWaterSimulation(nullptr)
+		, mSkybox(nullptr)
 	{
 
 	}
@@ -52,6 +55,11 @@ namespace Rendering
 
 	OpenGLRenderPipeline::~OpenGLRenderPipeline()
 	{
+		//delete mWaterSimulation;
+		//mWaterSimulation = nullptr;
+
+		//delete mSkybox;
+		//mSkybox = nullptr;
 	}
 
 	// -------------------------------------------------
@@ -159,6 +167,7 @@ namespace Rendering
 		SetupShaders();
 
 		mWaterSimulation = new WaterSimulation();
+		mSkybox          = new Skybox("Sky", "Skybox/Day/Right.bmp", "Skybox/Day/Left.bmp", "Skybox/Day/Top.bmp", "Skybox/Day/Bottom.bmp", "Skybox/Day/Front.bmp", "Skybox/Day/Back.bmp");
 
 		return true;
 	}
@@ -298,6 +307,11 @@ namespace Rendering
 
 		// Make sure we are rendering to the offscreen buffer
 		mFinalRenderFBO->SetActive(true, true);
+
+		if (mSkybox)
+		{
+			mSkybox->Render(mActiveCamera);
+		}
 
 		// --------------------------------
 

@@ -47,17 +47,17 @@ namespace Rendering
 		void SetupBufferData();
 
 		// Array of 6 textures, one for each side
-		Texture::CubeMapTexture* mCubeMapTexture;
-		Texture::CubeMapTexture* mConvolutedVersion;
+		Texture::CubeMapTexture*       mCubeMapTexture;
+		Texture::CubeMapTexture*       mConvolutedVersion;
 
-		std::string              mFilePaths[6];
-		std::string              mName;
-		std::string              mInternalName;
+		std::string                    mFilePaths[6];
+		std::string                    mName;
+		std::string                    mInternalName;
 
-		Buffers::VertexArrayObject* mCubeVAO;
+		Buffers::VertexArrayObject*    mCubeVAO;
 		ShaderPrograms::ShaderProgram* mSkyBoxProgram;
 
-		Buffers::VertexBufferObject* mCubeVBO;
+		Buffers::VertexBufferObject*   mCubeVBO;
 
 		bool mShowingIrradianceMap;
 	};
