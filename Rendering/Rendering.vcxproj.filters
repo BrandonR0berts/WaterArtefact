@@ -94,15 +94,6 @@
     <Filter Include="Shaders\Water">
       <UniqueIdentifier>{db0a02a0-2211-459f-89c8-9af6a849b42c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders\Water\Sine">
-      <UniqueIdentifier>{8a72d845-7c69-4e34-854e-068c206fd4be}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shaders\Water\Gersnter">
-      <UniqueIdentifier>{54d1a763-1890-4cab-b97c-968091f00f6c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shaders\Water\Tessendorf">
-      <UniqueIdentifier>{1c762f32-6c43-4949-882f-b408cb46b75a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Window.h">
@@ -274,16 +265,10 @@
     <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Tessendorf.comp">
       <Filter>Shaders\Compute</Filter>
     </None>
-    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface_Sine.vert">
-      <Filter>Shaders\Water\Sine</Filter>
-    </None>
-    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface_Tessendorf.vert">
-      <Filter>Shaders\Water\Tessendorf</Filter>
-    </None>
-    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface_Gersnter.vert">
-      <Filter>Shaders\Water\Gersnter</Filter>
-    </None>
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\WaterSurface.frag">
+      <Filter>Shaders\Water</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface.vert">
       <Filter>Shaders\Water</Filter>
     </None>
   </ItemGroup>

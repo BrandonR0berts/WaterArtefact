@@ -96,10 +96,12 @@ namespace Rendering
 	void Window::ClearBuffers()
 	{
 		if (sRenderPipeline)
+		{
 			sRenderPipeline->ClearFinalRenderBuffer();
+		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	}
 

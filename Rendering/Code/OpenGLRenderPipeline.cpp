@@ -41,7 +41,7 @@ namespace Rendering
 		, mVBOVideo(nullptr)
 
 		, mColourTexture(nullptr)
-		, mDepthTexture(nullptr)
+		, mDepthStencilTexture(nullptr)
 
 		, mFinalRenderProgram(nullptr)
 
@@ -232,11 +232,11 @@ namespace Rendering
 			mColourTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_RGB, GL_RGB);
 
 			// Depth buffer
-			mDepthTexture = new Texture::Texture2D();
-			mDepthTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_BYTE, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
+			mDepthStencilTexture = new Texture::Texture2D();
+			mDepthStencilTexture->InitEmpty(screenWidth, screenHeight, false, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL);
 
 			mFinalRenderFBO->AttachColourBuffer(mColourTexture);
-			mFinalRenderFBO->AttachDepthBuffer(mDepthTexture);
+			mFinalRenderFBO->AttachDepthStencilBuffer(mDepthStencilTexture);
 
 			mFinalRenderFBO->CheckComplete();
 		}

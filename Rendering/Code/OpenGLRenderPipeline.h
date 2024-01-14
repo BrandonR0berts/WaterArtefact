@@ -103,7 +103,7 @@ namespace Rendering
 		Buffers::VertexBufferObject*                 mVBOVideo;
 
 		Texture::Texture2D*                          mColourTexture;
-		Texture::Texture2D*                          mDepthTexture;
+		Texture::Texture2D*                          mDepthStencilTexture;
 
 		// ---------------------------------------------------------------- //
 

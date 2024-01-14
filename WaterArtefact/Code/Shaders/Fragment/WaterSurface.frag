@@ -50,9 +50,10 @@ void main()
 
 
 
-	FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+	//FragColor = vec4(0.0, 0.0, 1.0, 1.0);
 	//FragColor = vec4(finalNormal.xyz, 1.0);
 	//FragColor = vec4(reflectedColour.rgb, 1.0);
+	FragColor = vec4(textureCoords.xy, 0.0, 1.0);
 }
 
 // ----------------------------------------------------------------

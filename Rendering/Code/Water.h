@@ -134,7 +134,6 @@ namespace Rendering
 		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Tessendorf;
 
 		ShaderPrograms::ShaderProgram* mActiveWaterModellingApproach;
-		ShaderPrograms::ShaderProgram* mActiveWaterRenderingApproach;
 
 		// Buffer that holds the X-Y-Z output from the compute shader above
 		Texture::Texture2D*            mPositionalBuffer;
@@ -165,14 +164,13 @@ namespace Rendering
 		// Level of detail - to allow for the ocean to go on forever
 		int                                 mLevelOfDetailCount;
 		bool                                mUsingLODs;
+		float                               mHighestLODDimensions;
 
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;
 
 		// Shader program used for rendering the surface of the water volume
-		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders_Sine;
-		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders_Gersnter;
-		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders_Tessendorf;
+		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders;
 
 		unsigned int mVertexCount;
 

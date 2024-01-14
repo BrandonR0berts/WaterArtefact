@@ -71,6 +71,9 @@ namespace Rendering
 		{
 			float intensity = 0.6f;
 			mFinalRenderFBO->ClearAll(intensity, intensity, intensity, 1.0f);
+
+			glClearColor(0.0, 0.0f, 0.0f, 0.0);
+			mFinalRenderFBO->ClearDepthStencilBuffer();
 		}
 	}
 
