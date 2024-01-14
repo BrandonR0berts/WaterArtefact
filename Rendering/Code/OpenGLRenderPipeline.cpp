@@ -329,7 +329,7 @@ namespace Rendering
 			// Render the sub-surface models
 
 			// Render the water's surface
-			mWaterSimulation->Render(mActiveCamera);
+			mWaterSimulation->Render(mActiveCamera, mSkybox->GetCubeMapTexture());
 
 			// Render everything above the surface
 		}
@@ -378,6 +378,16 @@ namespace Rendering
 			if (ImGui::Button("Reset"))
 			{
 				mDebugVisualisationOverride = BufferViewOverrideTypes::None;
+			}
+
+		ImGui::End();
+
+		ImGui::Begin("Camera");
+
+			float farDistance = mActiveCamera->GetFarDistance();
+			if (ImGui::InputFloat("Far Distance", &farDistance))
+			{
+				mActiveCamera->SetFarDistance(farDistance);
 			}
 
 		ImGui::End();

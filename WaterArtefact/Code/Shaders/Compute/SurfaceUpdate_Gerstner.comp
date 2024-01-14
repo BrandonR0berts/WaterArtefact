@@ -10,6 +10,8 @@ layout(rgba32f, binding = 3) uniform image2D binormalOutput;
 uniform float time;
 uniform int waveCount;
 
+// -------------------------------------------------------------------------------------
+
 struct GerstnerWaveData
 {
 	float amplitude;
@@ -27,6 +29,55 @@ layout (std430, binding = 5) buffer WaveData
 	GerstnerWaveData waves[];
 };
 
+// -------------------------------------------------------------------------------------
+
+vec3 CalculatePosition(vec2 texelCoord, vec2 direction, float frequency, float phaseConstant, float amplitude, float steepnessFactor)
+{	
+	return vec3((steepnessFactor * amplitude * direction.x) * cos(dot((frequency * direction), texelCoord) + (phaseConstant * time)),
+	            amplitude * sin(dot((frequency * direction), texelCoord) + (phaseConstant * time)),
+				(steepnessFactor * amplitude * direction.y) * cos(dot((frequency * direction), texelCoord) + (phaseConstant * time)));
+}
+
+// -------------------------------------------------------------------------------------
+
+vec3 CalculateBinormal(vec2 direction, float WA, float S, float C, float steepnessFactor)
+{
+	return vec3(steepnessFactor * direction.x * direction.x * WA * S,
+			    direction.x * WA * C,
+				steepnessFactor * direction.x * direction.y * WA * S);
+}
+
+// -------------------------------------------------------------------------------------
+
+vec3 CalculateTangent(vec2 direction, float WA, float S, float C, float steepnessFactor)
+{
+	return vec3(steepnessFactor * direction.x * direction.y * WA * S,
+				direction.y * WA * C,
+				steepnessFactor * direction.y * direction.y * WA * S);
+}
+
+// -------------------------------------------------------------------------------------
+
+vec3 CalculateNormal(vec2 direction, float WA, float S, float C, float steepnessFactor)
+{
+	return vec3(direction.x * WA * C,
+				steepnessFactor * WA * S,
+				direction.y * WA * C);
+}
+
+// -------------------------------------------------------------------------------------
+
+// https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-1-effective-water-simulation-physical-models
+// This code has the Y and Z positions flipped from the link 
+
+// Maps -1->1 to 0->1
+float mapToSaveNegatives(float value)
+{
+	return (value + 1.0) / 2.0;
+}
+
+// ---------------------------------------------------------- //
+
 void main()
 {
 	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
@@ -35,17 +86,19 @@ void main()
 	
 	// ---------------------------------------------------------- //
 
-	float finalX = 0.0;
-	float finalY = 0.0;
-	float finalZ = 0.0;
+	vec3 finalPositionData = vec3(0.0, 0.0, 0.0);
+	vec3 finalBinormalData = vec3(0.0, 0.0, 0.0);
+	vec3 finalTangentData  = vec3(0.0, 0.0, 0.0);
+	vec3 finalNormalData   = vec3(0.0, 0.0, 0.0);
 
 	// ---------------------------------------------------------- //
 
-	for(int i = 0; i < waveCount.x; i++)
+	for(int i = 0; i < waveCount; i++)
 	{
 		// ---------------------------------------------------------- //
+		// Position
 
-		vec2 direction = vec2(1.0, 1.0);
+		vec2 direction = vec2(1.0, 0.0);
 
 		if(waves[i].directionOfWaveX > 0.0 || waves[i].directionOfWaveZ > 0.0)
 			direction = normalize(vec2(waves[i].directionOfWaveX, waves[i].directionOfWaveZ));
@@ -53,27 +106,72 @@ void main()
 		float frequency     = 2.0 / waves[i].waveLength;
 		float phaseConstant = waves[i].speedOfWave * frequency;
 
-		float x = (waves[i].steepnessFactor * waves[i].amplitude * direction.x) * cos(dot((frequency * direction), texelCoord) + phaseConstant * time);
-		finalX += x;
+		vec3 thisWavePosition = CalculatePosition(texelCoord, direction, frequency, phaseConstant, waves[i].amplitude, waves[i].steepnessFactor);
+		finalPositionData += thisWavePosition;
 
 		// ---------------------------------------------------------- //
+		float WA             = frequency * waves[i].amplitude;
+		float phaseByTime    = phaseConstant * time;
+		float internalFactor = (dot(direction, texelCoord) * frequency) + phaseByTime;
+		float S              = sin(internalFactor);
+		float C              = cos(internalFactor);
 
-		float height = (waves[i].steepnessFactor * waves[i].amplitude * direction.y) * cos(dot((frequency * direction), texelCoord) + (phaseConstant * time));
-		finalY += height;
+		// Binormal
+		vec3 thisWaveBinormal = CalculateBinormal(direction, WA, S, C, waves[i].steepnessFactor);
+		finalBinormalData += thisWaveBinormal;
 
 		// ---------------------------------------------------------- //
+		// Tangent
+		vec3 thisWaveTangent = CalculateTangent(direction, WA, S, C, waves[i].steepnessFactor);
+		finalTangentData += thisWaveTangent;
 
-		float z = waves[i].amplitude * sin(dot((frequency * direction), texelCoord) + (phaseConstant * time));
-		finalY += z;
+		// ---------------------------------------------------------- //
+		// Normal
+		vec3 thisWaveNormal = CalculateNormal(direction, WA, S, C, waves[i].steepnessFactor);
+		finalNormalData += thisWaveNormal;
 	}
 
 	// ---------------------------------------------------------- //
 
-	finalValue.x = finalX;
-	finalValue.z = finalY;
-	finalValue.y = finalZ;
+	//finalNormalData   = normalize(finalNormalData);
+	finalBinormalData = normalize(finalBinormalData);
+	finalTangentData  = normalize(finalTangentData);
 
 	// ---------------------------------------------------------- //
 
+	finalValue.x = finalPositionData.x;
+	finalValue.y = finalPositionData.y;
+	finalValue.z = finalPositionData.z;
+
     imageStore(positionOutput, texelCoord, finalValue);
+
+	// ---------------------------------------------------------- //
+
+	finalValue.x = mapToSaveNegatives(1.0 - finalBinormalData.x);
+	finalValue.y = mapToSaveNegatives(-finalBinormalData.z);
+	finalValue.z = mapToSaveNegatives(finalBinormalData.y);
+
+    imageStore(binormalOutput, texelCoord, finalValue);
+
+	// ---------------------------------------------------------- //
+
+	finalValue.x = mapToSaveNegatives(-finalTangentData.x);
+	finalValue.y = mapToSaveNegatives(1.0 - finalTangentData.z);
+	finalValue.z = mapToSaveNegatives(finalTangentData.y);
+
+    imageStore(tangentOutput, texelCoord, finalValue);
+
+	// ---------------------------------------------------------- //
+
+	finalNormalData.x = mapToSaveNegatives(-finalNormalData.x);
+	finalNormalData.y = mapToSaveNegatives(-finalNormalData.y);
+	finalNormalData.z = mapToSaveNegatives(1.0 - finalNormalData.z);
+
+	finalNormalData = normalize(finalNormalData);
+
+    imageStore(normalOutput, texelCoord, vec4(finalNormalData, 1.0));
+
+	// ---------------------------------------------------------- //
 }
+
+// -------------------------------------------------------------------------------------

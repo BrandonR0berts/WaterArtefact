@@ -47,6 +47,9 @@ namespace Rendering
 
 		, mTessendorfData()
 
+		, mLevelOfDetailCount(0)
+		, mUsingLODs(true)
+
 		, mWaterVAO(nullptr)
 
 		, mSurfaceRenderShaders_Sine(nullptr)
@@ -463,6 +466,12 @@ namespace Rendering
 					mActiveWaterRenderingApproach = mSurfaceRenderShaders_Tessendorf;
 				}
 			}
+
+			if (ImGui::InputInt("LOD Count", &mLevelOfDetailCount))
+			{
+				if (mLevelOfDetailCount < 1)
+					mLevelOfDetailCount = 1;
+			}
 		ImGui::End();
 
 		if(mActiveWaterModellingApproach)
@@ -638,7 +647,7 @@ namespace Rendering
 
 	// ---------------------------------------------
 
-	void WaterSimulation::Render(Rendering::Camera* camera)
+	void WaterSimulation::Render(Rendering::Camera* camera, Texture::CubeMapTexture* skybox)
 	{
 		// Existance checks
 		if (!mWaterVAO || !mWaterVBO || !mPositionalBuffer || !mNormalBuffer || !mTangentBuffer || !mBiNormalBuffer || !mActiveWaterRenderingApproach)
@@ -656,6 +665,8 @@ namespace Rendering
 
 			OpenGLRenderPipeline* renderPipeline = ((OpenGLRenderPipeline*)Window::GetRenderPipeline());
 
+			renderPipeline->SetBackFaceCulling(true);
+
 			renderPipeline->SetLineModeEnabled(mWireframe);
 
 			// Textures
@@ -664,19 +675,48 @@ namespace Rendering
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE2, mTangentBuffer->GetTextureID(),    true);
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE3, mBiNormalBuffer->GetTextureID(),   true);
 
-			// Matricies
-			Maths::Matrix::Matrix4X4 identity = Maths::Matrix::Matrix4X4();
-			mActiveWaterRenderingApproach->SetMat4("modelMat", &identity[0]);
+			if (skybox)
+			{
+				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE4, skybox->GetTextureID(), false);
+			}
 
+			// view and projection matricies from the camera
 			glm::mat4 viewMat = camera->GetViewMatrix();
 			mActiveWaterRenderingApproach->SetMat4("viewMat", &viewMat[0][0]);
 
 			glm::mat4 projectionMat = camera->GetPerspectiveMatrix();
 			mActiveWaterRenderingApproach->SetMat4("projectionMat", &projectionMat[0][0]);
 
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, mVertexCount);
+			mActiveWaterModellingApproach->SetVec3("cameraPos", camera->GetPosition());
+
+			// ------------------------------------------------------------------------------------------------
+
+			// Now handle the LODs
+			for (int i = 0; i < mLevelOfDetailCount + 1; i++)
+			{
+				// Create the model matrix for this LOD so that it is the right scale
+				Maths::Matrix::Matrix4X4 modelMat = Maths::Matrix::Matrix4X4();
+
+				// i * 3 because we want to make a loop of 8 grids around the central one, which seeing as the grid is centered at 0,0,0 we need to * 3
+				// as * 2 would only add an extra half on each side
+
+				// + 1 as we dont want to re render the LOD of 0
+				float LODscaleFactor = std::powf(3, (i + 1));
+				modelMat.scaleX(LODscaleFactor);
+				modelMat.scaleZ(LODscaleFactor);
+
+				mActiveWaterRenderingApproach->SetMat4("modelMat", &modelMat[0]);
+
+				mActiveWaterRenderingApproach->SetFloat("textureCoordScale", LODscaleFactor);
+
+				// Draw the LOD
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, mVertexCount);
+			}
+
+			// ------------------------------------------------------------------------------------------------
 
 			renderPipeline->SetLineModeEnabled(false);
+			renderPipeline->SetBackFaceCulling(true);
 
 		mWaterVAO->Unbind();
 	}

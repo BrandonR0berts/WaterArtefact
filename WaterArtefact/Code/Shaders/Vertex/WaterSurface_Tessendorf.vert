@@ -13,6 +13,7 @@ uniform mat4 projectionMat;
 uniform float maxDistanceFromOrigin;
 
 out vec2 textureCoords;
+out vec4 fragCoord;
 
 void main()
 {
@@ -28,5 +29,6 @@ void main()
 
 	vec4 position = texture(positionalBuffer, textureCoords);
 
+	fragCoord     = modelMat * vec4(vertexPosition.x + position.x, position.y, vertexPosition.y + position.z, 1.0);
 	gl_Position = projectionMat * viewMat * modelMat * vec4(vertexPosition.x + position.x, position.z, vertexPosition.y + position.y, 1.0);
 }

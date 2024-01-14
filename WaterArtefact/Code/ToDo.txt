@@ -18,5 +18,8 @@
 
 - Add water reflection
 - Add water refraction
+- Create depth lookup image for colour of the water
 
 - Add imgui way to swap between generated buffers
+
+- Recombine vertex shaders into one to reduce complexity

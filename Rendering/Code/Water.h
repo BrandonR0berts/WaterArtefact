@@ -11,6 +11,7 @@ namespace Rendering
 	namespace Texture
 	{
 		class Texture2D;
+		class CubeMapTexture;
 	}
 
 	namespace ShaderPrograms
@@ -101,7 +102,7 @@ namespace Rendering
 		void RenderDebugMenu();
 
 		void Update(const float deltaTime);
-		void Render(Rendering::Camera* camera);
+		void Render(Rendering::Camera* camera, Texture::CubeMapTexture* skybox);
 
 		bool IsBelowSurface(Maths::Vector::Vector3D<float> position);
 
@@ -159,7 +160,11 @@ namespace Rendering
 		std::vector<SingleGerstnerWaveData> mGersnterWaveData;
 		Buffers::ShaderStorageBufferObject* mGerstnerWaveSSBO;
 
-		TessendorfWaveData     mTessendorfData;
+		TessendorfWaveData                  mTessendorfData;
+
+		// Level of detail - to allow for the ocean to go on forever
+		int                                 mLevelOfDetailCount;
+		bool                                mUsingLODs;
 
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;
