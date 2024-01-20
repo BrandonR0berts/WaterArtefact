@@ -49,6 +49,11 @@ namespace Rendering
 		, mLevelOfDetailCount(0)
 		, mUsingLODs(true)
 
+		, mHighestLODDimensions(0.0f)
+
+		, mDimensions(50)
+		, mDistanceBetweenVerticies(2)
+
 		, mWaterVAO(nullptr)
 
 		, mSurfaceRenderShaders(nullptr)
@@ -217,24 +222,20 @@ namespace Rendering
 
 	void WaterSimulation::SetupBuffers()
 	{
-		unsigned int dimensions = 3;
-
 		if (!mWaterVBO)
 		{
 			mWaterVBO = new Buffers::VertexBufferObject();
 
-			float        distanceBetweenPoints = 2.5f;
-			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(dimensions, distanceBetweenPoints);
+			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(mDimensions, mDistanceBetweenVerticies);
 
 			mWaterVBO->SetBufferData((void*)vertexData, mVertexCount * sizeof(Maths::Vector::Vector2D<float>), GL_STATIC_DRAW);
 
 			// ----------------
 
-			bool         evenSplit                  = dimensions % 2 == 0;
-			unsigned int halfDimensions             = dimensions / 2;
-			float        startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenPoints) + 0.5f : halfDimensions * distanceBetweenPoints;
+			unsigned int halfDimensions             = mDimensions / 2;
+			float        startingDistanceFromCentre = (float)halfDimensions * mDistanceBetweenVerticies;
 
-			mHighestLODDimensions = 2.0f * startingDistanceFromCentre;
+			mHighestLODDimensions = startingDistanceFromCentre;
 
 			if (mSurfaceRenderShaders)
 			{
@@ -257,7 +258,7 @@ namespace Rendering
 		{
 			mWaterEBO = new Buffers::ElementBufferObjects();
 
-			unsigned int* elementData = GenerateElementData(dimensions);
+			unsigned int* elementData = GenerateElementData(mDimensions);
 
 			mWaterEBO->SetBufferData(mElementCount * sizeof(unsigned int), elementData, GL_STATIC_DRAW);
 
@@ -635,11 +636,13 @@ namespace Rendering
 
 			// ------------------------------------------------------------------------------------------------
 
+			glDisable(GL_CULL_FACE);
+
 			// Now handle the LODs
 			for (int i = 0; i <= mLevelOfDetailCount; i++)
 			{
 				float                          LODscaleFactor = std::powf(3, i);
-				float                          dimensions     = mHighestLODDimensions * LODscaleFactor;
+				float                          dimensions     = (mHighestLODDimensions * LODscaleFactor) * 2.0f;
 
 				Maths::Vector::Vector2D<float> backLeftPos    = Maths::Vector::Vector2D<float>(-dimensions, -dimensions);
 
@@ -709,20 +712,20 @@ namespace Rendering
 
 	Maths::Vector::Vector2D<float>* WaterSimulation::GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex)
 	{		
-		mVertexCount = dimensions * dimensions;
+		mVertexCount = (dimensions + 1) * (dimensions + 1);
 		Maths::Vector::Vector2D<float>* newData = new Maths::Vector::Vector2D<float>[mVertexCount];
 
-		bool         evenSplit      = (dimensions % 2 == 0);
 		unsigned int halfDimensions = dimensions / 2;
 
-		float                          startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenVertex) + 0.5f : halfDimensions * distanceBetweenVertex;
+		float                          startingDistanceFromCentre = halfDimensions * distanceBetweenVertex;
 		Maths::Vector::Vector2D<float> topLeftXPos                = Maths::Vector::Vector2D(-startingDistanceFromCentre, -startingDistanceFromCentre);
 
 		unsigned int currentVertexID = 0;
 
-		for (int z = dimensions - 1; z >= 0; z--)
+		// Looped in reverse to get the winding order correct
+		for (int z = dimensions; z >= 0; z--)
 		{
-			for (int x = 0; x < dimensions; x++)
+			for (int x = 0; x <= dimensions; x++)
 			{
 				newData[currentVertexID++] = Maths::Vector::Vector2D<float>(topLeftXPos.x + (x * distanceBetweenVertex), topLeftXPos.y + (z * distanceBetweenVertex));
 			}
@@ -733,16 +736,16 @@ namespace Rendering
 
 	unsigned int* WaterSimulation::GenerateElementData(unsigned int dimensions)
 	{
-		mElementCount = (dimensions - 1) * (dimensions - 1) * 6;
+		mElementCount = (dimensions) * (dimensions) * 6;
 		unsigned int* elementData = new unsigned int[mElementCount];
 
 		unsigned int elementIndex = 0;
-		for (unsigned int z = 0; z < dimensions - 1; z++)
+		for (unsigned int z = 0; z < dimensions; z++)
 		{
-			unsigned int startOfRow     = dimensions * z;
-			unsigned int startOfNextRow = startOfRow + dimensions;
+			unsigned int startOfRow     = (dimensions + 1) * z;
+			unsigned int startOfNextRow = startOfRow + (dimensions + 1);
 
-			for (unsigned int x = 0; x < dimensions - 1; x++)
+			for (unsigned int x = 0; x < dimensions; x++)
 			{
 				elementData[elementIndex++] = startOfRow     + x;
 				elementData[elementIndex++] = startOfRow     + (x + 1);

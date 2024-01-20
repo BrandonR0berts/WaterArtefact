@@ -166,7 +166,10 @@ namespace Rendering
 		// Level of detail - to allow for the ocean to go on forever
 		int                                 mLevelOfDetailCount;
 		bool                                mUsingLODs;
+
 		float                               mHighestLODDimensions;
+		unsigned int                        mDimensions;
+		float                               mDistanceBetweenVerticies;
 
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;
