@@ -390,6 +390,12 @@ namespace Rendering
 				mActiveCamera->SetFarDistance(farDistance);
 			}
 
+			Maths::Vector::Vector3D<float> cameraPos = mActiveCamera->GetPosition();
+			if (ImGui::InputFloat3("Camera Position", &cameraPos.x))
+			{
+				mActiveCamera->SetPosition(cameraPos);
+			}
+
 		ImGui::End();
 	}
 

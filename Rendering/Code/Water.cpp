@@ -55,6 +55,9 @@ namespace Rendering
 
 		, mSimulationPaused(false)
 		, mWireframe(false)
+
+		, mWaterEBO(nullptr)
+		, mElementCount(0)
 	{
 		// Compute and final render shaders
 		SetupShaders();
@@ -214,12 +217,13 @@ namespace Rendering
 
 	void WaterSimulation::SetupBuffers()
 	{
+		unsigned int dimensions = 3;
+
 		if (!mWaterVBO)
 		{
 			mWaterVBO = new Buffers::VertexBufferObject();
 
-			unsigned int dimensions            = 200;
-			float        distanceBetweenPoints = 0.1f;
+			float        distanceBetweenPoints = 2.5f;
 			Maths::Vector::Vector2D<float>* vertexData = GenerateVertexData(dimensions, distanceBetweenPoints);
 
 			mWaterVBO->SetBufferData((void*)vertexData, mVertexCount * sizeof(Maths::Vector::Vector2D<float>), GL_STATIC_DRAW);
@@ -249,12 +253,24 @@ namespace Rendering
 			delete[] vertexData;
 		}
 
+		if (!mWaterEBO)
+		{
+			mWaterEBO = new Buffers::ElementBufferObjects();
+
+			unsigned int* elementData = GenerateElementData(dimensions);
+
+			mWaterEBO->SetBufferData(mElementCount * sizeof(unsigned int), elementData, GL_STATIC_DRAW);
+
+			delete[] elementData;
+		}
+
 		if (!mWaterVAO)
 		{
 			mWaterVAO = new Buffers::VertexArrayObject();
 
 			mWaterVAO->Bind();
 			mWaterVBO->Bind();
+			mWaterEBO->Bind();
 
 			// Positional data
 			mWaterVAO->EnableVertexAttribArray(0);
@@ -283,7 +299,7 @@ namespace Rendering
 
 	void WaterSimulation::UpdateSineWaveDataSet()
 	{
-		unsigned int waveCount   = (unsigned int)mSineWaveData.size();
+		         int waveCount   = (int)mSineWaveData.size();
 		unsigned int bytesInData = sizeof(SingleSineDataSet) * waveCount;
 
 		SingleSineDataSet* newData = new SingleSineDataSet[waveCount];
@@ -302,7 +318,7 @@ namespace Rendering
 
 	void WaterSimulation::UpdateGerstnerWaveDataSet()
 	{
-		unsigned int waveCount   = (unsigned int)mGersnterWaveData.size();
+		         int waveCount   = (int)mGersnterWaveData.size();
 		unsigned int bytesInData = sizeof(SingleGerstnerWaveData) * waveCount;
 
 		SingleGerstnerWaveData* newData = new SingleGerstnerWaveData[waveCount];
@@ -617,19 +633,12 @@ namespace Rendering
 
 			mSurfaceRenderShaders->SetVec3("cameraPos", camera->GetPosition());
 
-			// See if the highest detail section is visible
-
-			//mSurfaceRenderShaders->SetFloat("textureCoordScale", 1.0f);
-
-			// Draw the highest detail part
-			//glDrawArrays(GL_TRIANGLE_STRIP, 0, mVertexCount);
-
 			// ------------------------------------------------------------------------------------------------
 
 			// Now handle the LODs
 			for (int i = 0; i <= mLevelOfDetailCount; i++)
 			{
-				float                          LODscaleFactor = std::powf(3, (i + 1));
+				float                          LODscaleFactor = std::powf(3, i);
 				float                          dimensions     = mHighestLODDimensions * LODscaleFactor;
 
 				Maths::Vector::Vector2D<float> backLeftPos    = Maths::Vector::Vector2D<float>(-dimensions, -dimensions);
@@ -658,7 +667,9 @@ namespace Rendering
 					mSurfaceRenderShaders->SetFloat("textureCoordScale", LODscaleFactor);
 
 					// Draw the LOD
-					glDrawArrays(GL_TRIANGLE_STRIP, 0, mVertexCount);
+					glDrawElements(GL_TRIANGLES, mElementCount, GL_UNSIGNED_INT, 0);
+
+					ASSERTMSG(glGetError() != 0, "?");
 				}
 			}
 
@@ -698,120 +709,51 @@ namespace Rendering
 
 	Maths::Vector::Vector2D<float>* WaterSimulation::GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex)
 	{		
-		bool         evenSplit      = dimensions % 2 == 0;
+		mVertexCount = dimensions * dimensions;
+		Maths::Vector::Vector2D<float>* newData = new Maths::Vector::Vector2D<float>[mVertexCount];
+
+		bool         evenSplit      = (dimensions % 2 == 0);
 		unsigned int halfDimensions = dimensions / 2;
 
 		float                          startingDistanceFromCentre = evenSplit ? (halfDimensions * distanceBetweenVertex) + 0.5f : halfDimensions * distanceBetweenVertex;
 		Maths::Vector::Vector2D<float> topLeftXPos                = Maths::Vector::Vector2D(-startingDistanceFromCentre, -startingDistanceFromCentre);
 
-		unsigned int currentVertexID        = 0;
-		bool         movementDirectionRight = true;
+		unsigned int currentVertexID = 0;
 
-		// ------------------------------------------------------- //
-
-		unsigned int totalVertexCount = 0;
-
-		for (unsigned int z = 0; z < dimensions - 1; z++)
+		for (int z = dimensions - 1; z >= 0; z--)
 		{
-			for (unsigned int x = 0; x < dimensions; x++)
+			for (int x = 0; x < dimensions; x++)
 			{
-				if (movementDirectionRight)
-				{
-					totalVertexCount += 2;
-
-					// If this is the last point in the line
-					if (x == dimensions - 1)
-					{
-						movementDirectionRight = false;
-						totalVertexCount += 2;
-					}
-				}
-				else
-				{
-					totalVertexCount += 2;
-
-					// If this is the last point in the line
-					if (x == dimensions - 1)
-					{
-						// Flip the direction
-						movementDirectionRight = true;
-					}
-				}
+				newData[currentVertexID++] = Maths::Vector::Vector2D<float>(topLeftXPos.x + (x * distanceBetweenVertex), topLeftXPos.y + (z * distanceBetweenVertex));
 			}
 		}
-
-		// ------------------------------------------------------- //
-
-		                                mVertexCount = totalVertexCount;
-		Maths::Vector::Vector2D<float>* newData      = new Maths::Vector::Vector2D<float>[mVertexCount];
-
-		// ------------------------------------------------------- //
-
-		for (unsigned int z = 0; z < dimensions - 1; z++)
-		{
-			for (unsigned int x = 0; x < dimensions; x++)
-			{
-				if (currentVertexID > mVertexCount)
-					ASSERTFAIL("error");
-
-				Maths::Vector::Vector2D<float> newPos = topLeftXPos;
-
-				if (movementDirectionRight)
-				{
-					// Do the current position
-					newPos.x += distanceBetweenVertex * x;
-					newPos.y += distanceBetweenVertex * z;
-
-					newData[currentVertexID++] = newPos;
-
-					// Go down on the z
-					newPos.y += distanceBetweenVertex;
-
-					newData[currentVertexID++] = newPos;
-
-					// If this is the last point in the line
-					if (x == dimensions - 1)
-					{	
-						// Flip the direction
-						movementDirectionRight = false;
-
-						newData[currentVertexID] = newData[currentVertexID - 1];
-						currentVertexID++;
-
-						newData[currentVertexID] = newData[currentVertexID - 1];
-						currentVertexID++;
-					}
-				}
-				else
-				{
-					newPos.x += distanceBetweenVertex * (dimensions - x - 1);
-					newPos.y += distanceBetweenVertex * (z + 1);
-
-					newData[currentVertexID++] = newPos;
-
-					// If this is the last point in the line
-					if (x == dimensions - 1)
-					{
-						// Flip the direction
-						movementDirectionRight = true;
-						
-						newData[currentVertexID] = newData[currentVertexID - 1];
-						currentVertexID++;
-					}
-					else
-					{
-						// Now move back along the line
-						newPos.x -= distanceBetweenVertex;
-						newPos.y -= distanceBetweenVertex;
-
-						newData[currentVertexID++] = newPos;
-					}
-				}
-			}
-		}
-
-		// ------------------------------------------------------- //
 
 		return newData;
+	}
+
+	unsigned int* WaterSimulation::GenerateElementData(unsigned int dimensions)
+	{
+		mElementCount = (dimensions - 1) * (dimensions - 1) * 6;
+		unsigned int* elementData = new unsigned int[mElementCount];
+
+		unsigned int elementIndex = 0;
+		for (unsigned int z = 0; z < dimensions - 1; z++)
+		{
+			unsigned int startOfRow     = dimensions * z;
+			unsigned int startOfNextRow = startOfRow + dimensions;
+
+			for (unsigned int x = 0; x < dimensions - 1; x++)
+			{
+				elementData[elementIndex++] = startOfRow     + x;
+				elementData[elementIndex++] = startOfRow     + (x + 1);
+				elementData[elementIndex++] = startOfNextRow + x;
+
+				elementData[elementIndex++] = startOfRow     + (x + 1);
+				elementData[elementIndex++] = startOfNextRow + (x + 1);
+				elementData[elementIndex++] = startOfNextRow + x;
+			}
+		}
+
+		return elementData;
 	}
 }

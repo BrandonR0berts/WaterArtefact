@@ -355,6 +355,8 @@ namespace Rendering
 				: Buffer()
 			{
 				glGenBuffers(1, &mEBO);
+
+				ASSERTMSG(glGetError() != 0, "Error generating buffer");
 			}
 
 			// --------------------------------------------------------
@@ -369,6 +371,8 @@ namespace Rendering
 			void Bind()
 			{
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mEBO);
+
+				ASSERTMSG(glGetError() != 0, "Error binding EBO");
 			}
 
 			// --------------------------------------------------------
@@ -380,6 +384,8 @@ namespace Rendering
 				Bind();
 
 				glBufferData(GL_ELEMENT_ARRAY_BUFFER, bytesForBuffer, data, usage);
+
+				ASSERTMSG(glGetError() != 0, "Error setting buffer data");
 				
 				Rendering::TrackingData::AdjustGPUMemoryUsed(bytesForBuffer);
 			}
@@ -389,6 +395,8 @@ namespace Rendering
 			void Delete()
 			{
 				glDeleteBuffers(1, &mEBO);
+
+				ASSERTMSG(glGetError() != 0, "Error deleting EBO");
 			}
 
 			// --------------------------------------------------------

@@ -23,6 +23,7 @@ namespace Rendering
 	{
 		class VertexBufferObject;
 		class VertexArrayObject;
+		class ElementBufferObjects;
 		class ShaderStorageBufferObject;
 	}
 
@@ -122,6 +123,7 @@ namespace Rendering
 		void UpdateGerstnerWaveDataSet();
 
 		Maths::Vector::Vector2D<float>* GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex);
+		unsigned int* GenerateElementData(unsigned int dimensions);
 
 		// --------------------- Modelling surface --------------------- //
 		// Buffer holding the verticies of the water's surface
@@ -169,10 +171,13 @@ namespace Rendering
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;
 
+		Buffers::ElementBufferObjects* mWaterEBO;
+
 		// Shader program used for rendering the surface of the water volume
 		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders;
 
 		unsigned int mVertexCount;
+		unsigned int mElementCount;
 
 		// --------------------- Other --------------------- //
 
