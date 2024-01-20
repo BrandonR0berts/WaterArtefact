@@ -45,13 +45,25 @@ namespace Rendering
 
 		}
 
+		SingleSineDataSet(float amplitude, Maths::Vector::Vector2D<float> direction, float speed, float wavelength)
+			: mAmplitude(amplitude)
+			, mSteepnessFactor(1.0f)
+			, mWaveLength(wavelength)
+			, mSpeedOfWave(speed)
+			, mDirectionOfWave(direction)
+			, padding1(0.0f)
+			, padding2(0.0f)
+		{
+
+		}
+
 		float                          mAmplitude;
 		float                          mSteepnessFactor;
 		float                          mWaveLength;
 		float                          mSpeedOfWave;
 		Maths::Vector::Vector2D<float> mDirectionOfWave;
-		float padding1;
-		float padding2;
+		float                          padding1;
+		float                          padding2;
 	};
 
 	struct SingleGerstnerWaveData final
@@ -65,6 +77,16 @@ namespace Rendering
 			, mPadding()
 		{
 
+		}
+
+		SingleGerstnerWaveData(float amplitude, Maths::Vector::Vector2D<float> direction, float speed, float wavelength, float steepness)
+			: mAmplitude(amplitude)
+			, mSteepness(steepness)
+			, mSpeedOfWave(speed)
+			, mWaveLength(wavelength)
+			, mDirectionOfWave(direction)
+			, mPadding()
+		{
 		}
 
 		float                          mAmplitude;
@@ -94,6 +116,27 @@ namespace Rendering
 
 	// ---------------------------------------
 
+	enum class SimulationMethods 
+	{
+		Sine,
+		Gerstner,
+		Tessendorf
+	};
+
+	enum class SineWavePresets : char
+	{
+		Calm,
+		Chopppy,
+		Strange
+	};
+
+	enum class GerstnerWavePresets : char
+	{
+		Calm,
+		Chopppy,
+		Strange
+	};
+
 	class WaterSimulation final
 	{
 	public:
@@ -111,6 +154,8 @@ namespace Rendering
 		Texture::Texture2D* GetNormalBuffer()     { return mNormalBuffer;     }
 		Texture::Texture2D* GetTangentBuffer()    { return mTangentBuffer;    }
 		Texture::Texture2D* GetBinormalBuffer()   { return mBiNormalBuffer;   }
+
+		void SetPreset(SimulationMethods approach, char preset);
 
 	private:
 		void PerformanceTesting();

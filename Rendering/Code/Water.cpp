@@ -51,8 +51,8 @@ namespace Rendering
 
 		, mHighestLODDimensions(0.0f)
 
-		, mDimensions(50)
-		, mDistanceBetweenVerticies(2)
+		, mDimensions(100)
+		, mDistanceBetweenVerticies(0.3)
 
 		, mWaterVAO(nullptr)
 
@@ -376,21 +376,25 @@ namespace Rendering
 	{
 		ImGui::Begin("Water Simulation Debug");
 
+			// Pause
 			if (ImGui::Button("Toggle Simulation Pause"))
 			{
 				mSimulationPaused = !mSimulationPaused;
 			}
 
+			// Wireframe
 			if (ImGui::Button("Toggle Wireframe"))
 			{
 				mWireframe = !mWireframe;
 			}
 
+			// Testing
 			if (ImGui::Button("Run performance tests"))
 			{
 				PerformanceTesting();
 			}
 
+			// Swapping approach
 			if (ImGui::CollapsingHeader("Modelling approach"))
 			{
 				if (ImGui::Button("Sine Waves"))
@@ -409,10 +413,11 @@ namespace Rendering
 				}
 			}
 
+			// LOD
 			if (ImGui::InputInt("LOD Count", &mLevelOfDetailCount))
 			{
-				if (mLevelOfDetailCount < 1)
-					mLevelOfDetailCount = 1;
+				if (mLevelOfDetailCount < 0)
+					mLevelOfDetailCount = 0;
 			}
 		ImGui::End();
 
@@ -470,6 +475,24 @@ namespace Rendering
 							UpdateSineWaveDataSet();
 						}
 					}
+
+					if (ImGui::CollapsingHeader("Presets##Sine"))
+					{
+						if (ImGui::Button("Calm##sine"))
+						{
+							SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Calm);
+						}
+
+						if (ImGui::Button("Choppy##sine"))
+						{
+							SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Chopppy);
+						}
+
+						if (ImGui::Button("Strange##sine"))
+						{
+							SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Strange);
+						}
+					}
 				}
 				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Gerstner)
 				{
@@ -522,6 +545,24 @@ namespace Rendering
 						if (changed)
 						{
 							UpdateGerstnerWaveDataSet();
+						}
+					}
+
+					if (ImGui::CollapsingHeader("Presets##Gerstner"))
+					{
+						if (ImGui::Button("Calm##Gerstner"))
+						{
+							SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Calm);
+						}
+
+						if (ImGui::Button("Choppy##Gerstner"))
+						{
+							SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Chopppy);
+						}
+
+						if (ImGui::Button("Strange##Gerstner"))
+						{
+							SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Strange);
 						}
 					}
 				}
@@ -734,6 +775,8 @@ namespace Rendering
 		return newData;
 	}
 
+	// ---------------------------------------------
+
 	unsigned int* WaterSimulation::GenerateElementData(unsigned int dimensions)
 	{
 		mElementCount = (dimensions) * (dimensions) * 6;
@@ -759,4 +802,85 @@ namespace Rendering
 
 		return elementData;
 	}
+
+	// ---------------------------------------------
+
+	void WaterSimulation::SetPreset(SimulationMethods approach, char preset)
+	{
+		switch (approach)
+		{
+		case SimulationMethods::Sine:
+			mActiveWaterModellingApproach = mWaterMovementComputeShader_Sine;
+
+			mSineWaveData.clear();
+
+			switch ((SineWavePresets)preset)
+			{
+			case SineWavePresets::Calm:
+				mSineWaveData.push_back(SingleSineDataSet(0.1f, {1.0f, 0.0f}, 10.0f, 30.0f));
+				mSineWaveData.push_back(SingleSineDataSet(0.1f, { 0.05f, 1.0f }, 15.0f, 15.0f));
+				mSineWaveData.push_back(SingleSineDataSet(0.03f, { 0.6f, 0.4f }, 50.0f, 13.0f));
+			break;
+			
+			case SineWavePresets::Chopppy:
+				mSineWaveData.push_back(SingleSineDataSet(0.2f, { 0.5f, 0.5f }, 5.0f, 60.0f));
+				mSineWaveData.push_back(SingleSineDataSet(0.25f, { 0.05f, 1.0f }, 15.0f, 100.0f));
+				mSineWaveData.push_back(SingleSineDataSet(0.05f, { 0.6f, 0.4f }, 50.0f, 13.0f));
+			break;
+
+			case SineWavePresets::Strange:
+				mSineWaveData.push_back(SingleSineDataSet(0.6f, { 1.0f, 0.0f }, 5.0f, 60.0f));
+				mSineWaveData.push_back(SingleSineDataSet(0.5f, { 0.05f, 1.0f }, 30.0f, 126.0f));
+				mSineWaveData.push_back(SingleSineDataSet(0.05f, { 0.2f, 0.6f }, 12.0f, 15.0f));
+			break;
+
+			default:
+			return;
+			}
+
+			UpdateSineWaveDataSet();
+		break;
+
+		case SimulationMethods::Gerstner:
+			mActiveWaterModellingApproach = mWaterMovementComputeShader_Gerstner;
+
+			mGersnterWaveData.clear();
+
+			switch ((GerstnerWavePresets)preset)
+			{
+			case GerstnerWavePresets::Calm:
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.13f, {0.5f, 0.1f}, 15.0f, 50.0f, 0.2f));
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.1f, {0.3f, 0.4f}, 6.0f, 100.0f, 0.1f));
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.1f, {1.0f, 0.0f}, 30.0f, 150.0f, 5.0f));
+			break;
+			
+			case GerstnerWavePresets::Chopppy:
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.2f, { 0.5f, 0.1f }, 6.0f, 15.0f, 0.1f));
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.1f, { 1.0f, 1.0f}, 30.0f, 15.0f, 0.3f));
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.15f, { 0.5f, 0.1f }, 6.0f, 20.0f, 0.3f));
+			break;
+				
+			case GerstnerWavePresets::Strange:
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.2f, { 0.5f, 0.1f }, 3.0f, 30.0f, 0.5f));
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.3f, { 0.0f, 1.0f }, 15.0f, 40.0f, 0.1f));
+				mGersnterWaveData.push_back(SingleGerstnerWaveData(0.15f, { 0.0f, 1.0f }, 6.0f, 15.0f, 1.0f));
+			break;
+
+			default:
+			return;
+			}
+
+			UpdateGerstnerWaveDataSet();
+		break;
+
+		case SimulationMethods::Tessendorf:
+			mActiveWaterModellingApproach = mWaterMovementComputeShader_Tessendorf;
+		break;
+
+		default:
+		return;
+		}
+	}
+
+	// ---------------------------------------------
 }

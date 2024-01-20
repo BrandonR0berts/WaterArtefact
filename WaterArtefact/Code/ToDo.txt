@@ -1,11 +1,6 @@
 - Determine which sections need their times captured
 - Create functionality for running a test that ImGui will hook into
 
-- Fix vertex generation code
-
-- Add presets for sine waves
-- Add presets for gerstner waves
-
 - Add tessendorf appraoch
 	- Solve how to represent an FFT (and complex numbers) in code
 
@@ -19,7 +14,3 @@
 - Add water reflection
 - Add water refraction
 - Create depth lookup image for colour of the water
-
-- Add imgui way to swap between generated buffers
-
-- Recombine vertex shaders into one to reduce complexity
