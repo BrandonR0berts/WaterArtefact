@@ -94,6 +94,9 @@
     <Filter Include="Shaders\Water">
       <UniqueIdentifier>{db0a02a0-2211-459f-89c8-9af6a849b42c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Compute\Tessendorf">
+      <UniqueIdentifier>{56a5b9de-9132-4fde-be9e-a68735a68c36}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Window.h">
@@ -262,14 +265,23 @@
     <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Gerstner.comp">
       <Filter>Shaders\Compute</Filter>
     </None>
-    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Tessendorf.comp">
-      <Filter>Shaders\Compute</Filter>
-    </None>
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\WaterSurface.frag">
       <Filter>Shaders\Water</Filter>
     </None>
     <None Include="..\WaterArtefact\Code\Shaders\Vertex\WaterSurface.vert">
       <Filter>Shaders\Water</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Tessendorf.comp">
+      <Filter>Shaders\Compute\Tessendorf</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\ConvertFrequencyToWorldHeight.comp">
+      <Filter>Shaders\Compute\Tessendorf</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateH0_Tessendorf.comp">
+      <Filter>Shaders\Compute\Tessendorf</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateHeight_Tessendorf.comp">
+      <Filter>Shaders\Compute\Tessendorf</Filter>
     </None>
   </ItemGroup>
 </Project>

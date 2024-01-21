@@ -2,41 +2,18 @@
 
 // The resolution of the image is the N in these equations. N determines the amount of waves that are generated.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
 layout(rgba32f, binding = 0) uniform image2D positionOutput;
-layout(rgba32f, binding = 1) uniform image2D normalOutput;
-layout(rgba32f, binding = 2) uniform image2D tangentOutput;
-layout(rgba32f, binding = 3) uniform image2D binormalOutput;
 
 // --------------------------------------------------------------------------------
 
 uniform float time;
-//uniform float maxDistanceFromOrigin;
 
 uniform float repeatAfterTime;
 uniform vec2  windVelocity;
-//uniform int   waveCount;
 uniform float gravity;
 
 // --------------------------------------------------------------------------------
@@ -56,23 +33,9 @@ struct ComplexNumber
 	float complex;
 };
 
-ComplexNumber AddComplex(ComplexNumber num1, ComplexNumber num2)
+ComplexNumber MultiplyComplex(ComplexNumber num1, float multiplier)
 {
-	return ComplexNumber(num1.real + num2.real, num1.complex + num2.complex);
-}
-
-ComplexNumber MultiplyComplex(ComplexNumber num1, ComplexNumber num2)
-{
-	return ComplexNumber((num1.real * num2.real)    - (num1.complex * num2.complex), 
-	                     (num1.real * num2.complex) + (num1.complex * num2.real));
-}
-
-// --------------------------------------------------------------------------------
-
-// Used for converting freqeuncy space values into positional space values
-float InverseFFT(float value, vec2 worldPosition, vec2 k)
-{
-	return value * exp(dot(k, worldPosition));
+	return ComplexNumber(num1.real * multiplier, num1.complex * multiplier);
 }
 
 // --------------------------------------------------------------------------------
@@ -102,25 +65,19 @@ float PhillipsSpectrum(vec2 k)
 // --------------------------------------------------------------------------------
 
 // Fourier amplitudes of a wave height field
-float hZero(vec2 k, vec2 randomNumberSeed)
+ComplexNumber hZero(vec2 k, vec2 randomNumberSeed)
 {
-	return oneOverRootTwo * (RandomNumber(randomNumberSeed) + RandomNumber(randomNumberSeed)) * sqrt(PhillipsSpectrum(k, waveNumber));
-}
+	float multiplier = oneOverRootTwo * sqrt(PhillipsSpectrum(k));
 
-// --------------------------------------------------------------------------------
-
-// Fourier amplitude function
-float heightFunction(vec2 k, float dispersionRelation, int waveNumber, vec2 randomNumberSeed)
-{
-	return (hZero(k, waveNumber, randomNumberSeed) * exp(dispersionRelation * time)) + (hZero(-k, waveNumber, randomNumberSeed) * exp(-dispersionRelation * time));
+	return MultiplyComplex(ComplexNumber(RandomNumber(randomNumberSeed), RandomNumber(randomNumberSeed)), multiplier);
 }
 
 // --------------------------------------------------------------------------------
 
 vec2 CreateK(float n, float m, float resolution)
 {
-	return vec2(2.0 * PI * n / resolution,
-	            2.0 * PI * m / resolution);
+	return vec2((2.0 * PI * n) / resolution,
+	            (2.0 * PI * m) / resolution);
 }
 
 // --------------------------------------------------------------------------------
@@ -146,31 +103,17 @@ void main()
 
 	// ---------------------------------------------------------- //
 
-	// For now generate H0 in here, will move it to a pre-generation process eventually
-	float h0 = ;
-
-
-	// Now calculate the final height
-
-
-	// Dispersion relation
-	float dispersionRelation = floor(sqrt(gravity * i)) * dispersionRelation_zero;
-
-	float finalHeight = 0.0;
-
-	float L = maxDistanceFromOrigin * 2.0;
-
-		
-	// Accumulate the height
-	finalHeight += InverseFFT(heightFunction(k, dispersionRelation, i, texelCoord), worldPos, k);
+	// Generate H0, which will then be passed into the final calculations as a starting point
+	ComplexNumber h0 = hZero(k, texelCoord);
 
 	// ---------------------------------------------------------- //
 
-	finalValue.y = PhillipsSpectrum(k, 16);
-
-	// ---------------------------------------------------------- //
+	finalValue.x = h0.real;
+	finalValue.y = h0.complex;
 
     imageStore(positionOutput, texelCoord, finalValue);
+
+	// ---------------------------------------------------------- //
 }
 
 // --------------------------------------------------------------------------------

@@ -26,11 +26,15 @@ namespace Rendering
 		: mWaterVBO(nullptr)
 		, mWaterMovementComputeShader_Sine(nullptr)
 		, mWaterMovementComputeShader_Gerstner(nullptr)
-		, mWaterMovementComputeShader_Tessendorf(nullptr)
 
-		, mActiveWaterModellingApproach(nullptr)
+		, mGenerateH0_ComputeShader(nullptr)
+		, mCreateFrequencyValues_ComputeShader(nullptr)
+		, mConvertToHeightValues_ComputeShader(nullptr)
+
+		, mModellingApproach(SimulationMethods::Sine)
 
 		, mPositionalBuffer(nullptr)
+		, mH0Buffer(nullptr)
 		, mNormalBuffer(nullptr)
 		, mTangentBuffer(nullptr)
 		, mBiNormalBuffer(nullptr)
@@ -54,6 +58,8 @@ namespace Rendering
 		, mDimensions(100)
 		, mDistanceBetweenVerticies(0.3)
 
+		, mTextureResolution(1024)
+
 		, mWaterVAO(nullptr)
 
 		, mSurfaceRenderShaders(nullptr)
@@ -72,6 +78,8 @@ namespace Rendering
 
 		// Storage textures
 		SetupTextures();
+
+		GenerateH0();
 	}
 
 	// ---------------------------------------------
@@ -91,12 +99,16 @@ namespace Rendering
 		delete mWaterMovementComputeShader_Gerstner;
 		mWaterMovementComputeShader_Gerstner = nullptr;
 
-		delete mWaterMovementComputeShader_Tessendorf;
-		mWaterMovementComputeShader_Tessendorf = nullptr;
-
 		// --------------------------------------
 
-		mActiveWaterModellingApproach = nullptr;
+		delete mGenerateH0_ComputeShader;
+		mGenerateH0_ComputeShader = nullptr;
+
+		delete mCreateFrequencyValues_ComputeShader;
+		mCreateFrequencyValues_ComputeShader = nullptr;
+
+		delete mConvertToHeightValues_ComputeShader;
+		mConvertToHeightValues_ComputeShader = nullptr;
 
 		// --------------------------------------
 
@@ -133,6 +145,24 @@ namespace Rendering
 		mGerstnerWaveSSBO = nullptr;
 
 		// --------------------------------------
+	}
+
+	// ---------------------------------------------
+
+	void WaterSimulation::GenerateH0()
+	{
+		if (!mH0Buffer || !mGenerateH0_ComputeShader)
+			return;
+
+		mGenerateH0_ComputeShader->UseProgram();
+			mH0Buffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+			mGenerateH0_ComputeShader->SetFloat("time",            1.256f);
+			mGenerateH0_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
+			mGenerateH0_ComputeShader->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
+			mGenerateH0_ComputeShader->SetVec2("windVelocity",     mTessendorfData.mWindVelocity);
+
+			glDispatchCompute(mTextureResolution, mTextureResolution, 1);
 	}
 
 	// ---------------------------------------------
@@ -198,22 +228,67 @@ namespace Rendering
 			delete computeShader;
 		}
 
-		if (!mWaterMovementComputeShader_Tessendorf)
+		if (!mGenerateH0_ComputeShader)
 		{
-			mWaterMovementComputeShader_Tessendorf = new ShaderPrograms::ShaderProgram();
+			mGenerateH0_ComputeShader = new ShaderPrograms::ShaderProgram();
 
-			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/SurfaceUpdate_Tessendorf.comp");
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/GenerateH0_Tessendorf.comp");
 
-			mWaterMovementComputeShader_Tessendorf->AttachShader(computeShader);
+			mGenerateH0_ComputeShader->AttachShader(computeShader);
 
-				mWaterMovementComputeShader_Tessendorf->LinkShadersToProgram();
+				mGenerateH0_ComputeShader->LinkShadersToProgram();
 
-			mWaterMovementComputeShader_Tessendorf->DetachShader(computeShader);
+			mGenerateH0_ComputeShader->DetachShader(computeShader);
 
 			delete computeShader;
 		}
 
-		mActiveWaterModellingApproach = mWaterMovementComputeShader_Sine;
+		if (!mGenerateH0_ComputeShader)
+		{
+			mGenerateH0_ComputeShader = new ShaderPrograms::ShaderProgram();
+
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/GenerateH0_Tessendorf.comp");
+
+			mGenerateH0_ComputeShader->AttachShader(computeShader);
+
+				mGenerateH0_ComputeShader->LinkShadersToProgram();
+
+			mGenerateH0_ComputeShader->DetachShader(computeShader);
+
+			delete computeShader;
+		}
+
+		if (!mCreateFrequencyValues_ComputeShader)
+		{
+			mCreateFrequencyValues_ComputeShader = new ShaderPrograms::ShaderProgram();
+
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/GenerateHeight_Tessendorf.comp");
+
+			mCreateFrequencyValues_ComputeShader->AttachShader(computeShader);
+
+				mCreateFrequencyValues_ComputeShader->LinkShadersToProgram();
+
+			mCreateFrequencyValues_ComputeShader->DetachShader(computeShader);
+
+			delete computeShader;
+		}
+
+		if (!mConvertToHeightValues_ComputeShader)
+		{
+			mConvertToHeightValues_ComputeShader = new ShaderPrograms::ShaderProgram();
+
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/ConvertFrequencyToWorldHeight.comp");
+
+			mConvertToHeightValues_ComputeShader->AttachShader(computeShader);
+
+				mConvertToHeightValues_ComputeShader->LinkShadersToProgram();
+
+			mConvertToHeightValues_ComputeShader->DetachShader(computeShader);
+
+			delete computeShader;
+		}
+
+		mModellingApproach = SimulationMethods::Sine;
 
 		// --------------------------------------------------------------
 	}
@@ -241,12 +316,6 @@ namespace Rendering
 			{
 				mSurfaceRenderShaders->UseProgram();
 					mSurfaceRenderShaders->SetFloat("maxDistanceFromOrigin", startingDistanceFromCentre);
-			}
-
-			if (mWaterMovementComputeShader_Tessendorf)
-			{
-				mWaterMovementComputeShader_Tessendorf->UseProgram();
-					mWaterMovementComputeShader_Tessendorf->SetFloat("maxDistanceFromOrigin", startingDistanceFromCentre);
 			}
 
 			// ----------------
@@ -338,35 +407,39 @@ namespace Rendering
 
 	void WaterSimulation::SetupTextures()
 	{
-		unsigned int width  = 1000;
-		unsigned int height = 1000;
-
 		if (!mPositionalBuffer)
 		{
 			mPositionalBuffer = new Texture::Texture2D();
 
-			mPositionalBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA, { GL_LINEAR, GL_NEAREST }, {});
+			mPositionalBuffer->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA, { GL_LINEAR, GL_NEAREST }, {});
 		}
 
 		if (!mNormalBuffer)
 		{
 			mNormalBuffer = new Texture::Texture2D();
 
-			mNormalBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+			mNormalBuffer->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
 		}
 
 		if (!mTangentBuffer)
 		{
 			mTangentBuffer = new Texture::Texture2D();
 
-			mTangentBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+			mTangentBuffer->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
 		}
 
 		if (!mBiNormalBuffer)
 		{
 			mBiNormalBuffer = new Texture::Texture2D();
 
-			mBiNormalBuffer->InitEmpty(width, height, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+			mBiNormalBuffer->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+		}
+
+		if (!mH0Buffer)
+		{
+			mH0Buffer = new Texture::Texture2D();
+
+			mH0Buffer->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
 		}
 	}
 
@@ -399,17 +472,17 @@ namespace Rendering
 			{
 				if (ImGui::Button("Sine Waves"))
 				{
-					mActiveWaterModellingApproach = mWaterMovementComputeShader_Sine;
+					mModellingApproach = SimulationMethods::Sine;
 				}
 
 				if (ImGui::Button("Gerstner Waves"))
 				{
-					mActiveWaterModellingApproach = mWaterMovementComputeShader_Gerstner;
+					mModellingApproach = SimulationMethods::Gerstner;
 				}
 
 				if (ImGui::Button("Ocean simulation"))
 				{
-					mActiveWaterModellingApproach = mWaterMovementComputeShader_Tessendorf;
+					mModellingApproach = SimulationMethods::Tessendorf;
 				}
 			}
 
@@ -421,211 +494,253 @@ namespace Rendering
 			}
 		ImGui::End();
 
-		if(mActiveWaterModellingApproach)
-		{
-			ImGui::Begin("Water properties");
+		
+		ImGui::Begin("Water properties");
 
-				if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Sine)
+			if (mModellingApproach == SimulationMethods::Sine)
+			{
+				bool changed = false;
+
+				if (ImGui::CollapsingHeader("Sine wave data"))
 				{
-					bool changed = false;
-
-					if (ImGui::CollapsingHeader("Sine wave data"))
+					unsigned int waveCount = (unsigned int)mSineWaveData.size();
+					for (unsigned int i = 0; i < waveCount; i++)
 					{
-						unsigned int waveCount = (unsigned int)mSineWaveData.size();
-						for (unsigned int i = 0; i < waveCount; i++)
-						{
-							ImGui::Text("-------------------------------------------------------");
+						ImGui::Text("-------------------------------------------------------");
 
-							std::string stringI = std::to_string(i);
+						std::string stringI = std::to_string(i);
 
-							if (ImGui::InputFloat(("Amplitude##Sine" + stringI).c_str(), &mSineWaveData[i].mAmplitude))
-								changed = true;
-
-							if (ImGui::InputFloat2(("Direction##Sine" + stringI).c_str(), &mSineWaveData[i].mDirectionOfWave.x))
-								changed = true;
-
-							if (ImGui::InputFloat(("Speed##Sine" + stringI).c_str(), &mSineWaveData[i].mSpeedOfWave))
-								changed = true;
-
-							if (ImGui::InputFloat(("Wavelength##Sine" + stringI).c_str(), &mSineWaveData[i].mWaveLength))
-								changed = true;
-
-							if (ImGui::Button(("Remove wave##Sine" + stringI).c_str()))
-							{
-								mSineWaveData.erase(mSineWaveData.begin() + i);
-								UpdateSineWaveDataSet();
-
-								changed = false;
-
-								break;
-							}
-
-							ImGui::Text("-------------------------------------------------------");
-						}
-
-						if (ImGui::Button("Add new wave##Sine"))
-						{
-							mSineWaveData.push_back(SingleSineDataSet());
-
+						if (ImGui::InputFloat(("Amplitude##Sine" + stringI).c_str(), &mSineWaveData[i].mAmplitude))
 							changed = true;
-						}
 
-						if (changed)
+						if (ImGui::InputFloat2(("Direction##Sine" + stringI).c_str(), &mSineWaveData[i].mDirectionOfWave.x))
+							changed = true;
+
+						if (ImGui::InputFloat(("Speed##Sine" + stringI).c_str(), &mSineWaveData[i].mSpeedOfWave))
+							changed = true;
+
+						if (ImGui::InputFloat(("Wavelength##Sine" + stringI).c_str(), &mSineWaveData[i].mWaveLength))
+							changed = true;
+
+						if (ImGui::Button(("Remove wave##Sine" + stringI).c_str()))
 						{
+							mSineWaveData.erase(mSineWaveData.begin() + i);
 							UpdateSineWaveDataSet();
+
+							changed = false;
+
+							break;
 						}
+
+						ImGui::Text("-------------------------------------------------------");
 					}
 
-					if (ImGui::CollapsingHeader("Presets##Sine"))
+					if (ImGui::Button("Add new wave##Sine"))
 					{
-						if (ImGui::Button("Calm##sine"))
-						{
-							SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Calm);
-						}
+						mSineWaveData.push_back(SingleSineDataSet());
 
-						if (ImGui::Button("Choppy##sine"))
-						{
-							SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Chopppy);
-						}
+						changed = true;
+					}
 
-						if (ImGui::Button("Strange##sine"))
-						{
-							SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Strange);
-						}
+					if (changed)
+					{
+						UpdateSineWaveDataSet();
 					}
 				}
-				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Gerstner)
+
+				if (ImGui::CollapsingHeader("Presets##Sine"))
 				{
-					bool changed = false;
-
-					if (ImGui::CollapsingHeader("Gerstner wave data"))
+					if (ImGui::Button("Calm##sine"))
 					{
-						unsigned int waveCount = (unsigned int)mGersnterWaveData.size();
-						for (unsigned int i = 0; i < waveCount; i++)
-						{
-							ImGui::Text("-------------------------------------------------------");
+						SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Calm);
+					}
 
-							std::string stringI = std::to_string(i);
+					if (ImGui::Button("Choppy##sine"))
+					{
+						SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Chopppy);
+					}
 
-							if (ImGui::InputFloat(("Amplitude##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mAmplitude))
-								changed = true;
+					if (ImGui::Button("Strange##sine"))
+					{
+						SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Strange);
+					}
+				}
+			}
+			else if (mModellingApproach == SimulationMethods::Gerstner)
+			{
+				bool changed = false;
 
-							if (ImGui::InputFloat2(("Direction##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mDirectionOfWave.x))
-								changed = true;
+				if (ImGui::CollapsingHeader("Gerstner wave data"))
+				{
+					unsigned int waveCount = (unsigned int)mGersnterWaveData.size();
+					for (unsigned int i = 0; i < waveCount; i++)
+					{
+						ImGui::Text("-------------------------------------------------------");
 
-							if (ImGui::InputFloat(("Speed##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mSpeedOfWave))
-								changed = true;
+						std::string stringI = std::to_string(i);
 
-							if (ImGui::InputFloat(("Wavelength##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mWaveLength))
-								changed = true;
-
-							if (ImGui::InputFloat(("Steepness##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mSteepness))
-								changed = true;
-
-							if (ImGui::Button(("Remove wave##Gerstner" + stringI).c_str()))
-							{
-								mGersnterWaveData.erase(mGersnterWaveData.begin() + i);
-								UpdateGerstnerWaveDataSet();
-
-								changed = false;
-
-								break;
-							}
-
-							ImGui::Text("-------------------------------------------------------");
-						}
-
-						if (ImGui::Button("Add new wave##Gerstner"))
-						{
-							mGersnterWaveData.push_back(SingleGerstnerWaveData());
-
+						if (ImGui::InputFloat(("Amplitude##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mAmplitude))
 							changed = true;
-						}
 
-						if (changed)
+						if (ImGui::InputFloat2(("Direction##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mDirectionOfWave.x))
+							changed = true;
+
+						if (ImGui::InputFloat(("Speed##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mSpeedOfWave))
+							changed = true;
+
+						if (ImGui::InputFloat(("Wavelength##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mWaveLength))
+							changed = true;
+
+						if (ImGui::InputFloat(("Steepness##Gerstner" + stringI).c_str(), &mGersnterWaveData[i].mSteepness))
+							changed = true;
+
+						if (ImGui::Button(("Remove wave##Gerstner" + stringI).c_str()))
 						{
+							mGersnterWaveData.erase(mGersnterWaveData.begin() + i);
 							UpdateGerstnerWaveDataSet();
+
+							changed = false;
+
+							break;
 						}
+
+						ImGui::Text("-------------------------------------------------------");
 					}
 
-					if (ImGui::CollapsingHeader("Presets##Gerstner"))
+					if (ImGui::Button("Add new wave##Gerstner"))
 					{
-						if (ImGui::Button("Calm##Gerstner"))
-						{
-							SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Calm);
-						}
+						mGersnterWaveData.push_back(SingleGerstnerWaveData());
 
-						if (ImGui::Button("Choppy##Gerstner"))
-						{
-							SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Chopppy);
-						}
+						changed = true;
+					}
 
-						if (ImGui::Button("Strange##Gerstner"))
-						{
-							SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Strange);
-						}
+					if (changed)
+					{
+						UpdateGerstnerWaveDataSet();
 					}
 				}
-				else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Tessendorf)
+
+				if (ImGui::CollapsingHeader("Presets##Gerstner"))
 				{
-					ImGui::InputInt("Wave count##Tessendorf",          &mTessendorfData.mWaveCount);
-					ImGui::InputFloat2("Wind Velocity##Tessendorf",    &mTessendorfData.mWindVelocity.x);
-					ImGui::InputFloat("Gravity##Tessendorf",           &mTessendorfData.mGravity);
-					ImGui::InputFloat("Repeat After Time##Tessendorf", &mTessendorfData.mRepeatAfterTime);
-
-					if (ImGui::Button("Defaults##Tessendorf"))
+					if (ImGui::Button("Calm##Gerstner"))
 					{
-						mTessendorfData = TessendorfWaveData();
+						SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Calm);
+					}
+
+					if (ImGui::Button("Choppy##Gerstner"))
+					{
+						SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Chopppy);
+					}
+
+					if (ImGui::Button("Strange##Gerstner"))
+					{
+						SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Strange);
 					}
 				}
+			}
+			if (mModellingApproach == SimulationMethods::Tessendorf)
+			{
+				if (ImGui::InputFloat2("Wind Velocity##Tessendorf", &mTessendorfData.mWindVelocity.x))
+				{
+					GenerateH0();
+				}
+
+				ImGui::InputFloat("Gravity##Tessendorf",           &mTessendorfData.mGravity);
+				ImGui::InputFloat("Repeat After Time##Tessendorf", &mTessendorfData.mRepeatAfterTime);
+
+				if (ImGui::Button("Defaults##Tessendorf"))
+				{
+					mTessendorfData = TessendorfWaveData();
+				}
+			}
 
 			ImGui::End();
-		}
 	}
 
 	// ---------------------------------------------
 
 	void WaterSimulation::Update(const float deltaTime)
 	{
-		if (mSimulationPaused || !mActiveWaterModellingApproach)
+		if (mSimulationPaused)
 			return;
 
 		mRunningTime += deltaTime;
 
-		// Update the texture holding the positional data for the water's surface
-		// This is through dispatching the compute shader to compute the positions
-		mActiveWaterModellingApproach->UseProgram();
+		switch(mModellingApproach)
+		{
+			case SimulationMethods::Sine:
 
-			mActiveWaterModellingApproach->SetFloat("time", mRunningTime);
+				mWaterMovementComputeShader_Sine->UseProgram();
 
-			if(mActiveWaterModellingApproach == mWaterMovementComputeShader_Sine)
-			{
+				mWaterMovementComputeShader_Sine->SetFloat("time", mRunningTime);
+			
 				if(mSineWaveSSBO)
 					mSineWaveSSBO->BindToBufferIndex(5);
 
-				mActiveWaterModellingApproach->SetInt("waveCount", (int)mSineWaveData.size());
-			}
-			else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Gerstner)
-			{
-				if(mGerstnerWaveSSBO)
+				mWaterMovementComputeShader_Sine->SetInt("waveCount", (int)mSineWaveData.size());
+
+				mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+			break;
+
+			case SimulationMethods::Gerstner:
+				mWaterMovementComputeShader_Gerstner->UseProgram();
+
+				if (mGerstnerWaveSSBO)
 					mGerstnerWaveSSBO->BindToBufferIndex(5);
 
-				mActiveWaterModellingApproach->SetInt("waveCount", (int)mGersnterWaveData.size());
-			}
-			else if (mActiveWaterModellingApproach == mWaterMovementComputeShader_Tessendorf)
-			{
-				mActiveWaterModellingApproach->SetFloat("gravity",         mTessendorfData.mGravity);
-				mActiveWaterModellingApproach->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
-				mActiveWaterModellingApproach->SetVec2("windVelocity",     mTessendorfData.mWindVelocity);
-				mActiveWaterModellingApproach->SetInt("waveCount",         mTessendorfData.mWaveCount);
-			}
+				mWaterMovementComputeShader_Gerstner->SetFloat("time", mRunningTime);
+				mWaterMovementComputeShader_Gerstner->SetInt("waveCount", (int)mGersnterWaveData.size());
 
-			mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
-		glDispatchCompute(1000, 1000, 1);
+				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+
+			break;
+
+			case SimulationMethods::Tessendorf:
+
+				// Generate the frequency values
+
+				mCreateFrequencyValues_ComputeShader->UseProgram();
+
+					mCreateFrequencyValues_ComputeShader->SetFloat("time",            mRunningTime);
+					mCreateFrequencyValues_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
+					mCreateFrequencyValues_ComputeShader->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
+					mCreateFrequencyValues_ComputeShader->SetVec2("windVelocity",     mTessendorfData.mWindVelocity);
+
+					mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+					mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+					mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+					mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+
+				// Now convert to world space heights
+
+				mCreateFrequencyValues_ComputeShader->UseProgram();
+
+					mCreateFrequencyValues_ComputeShader->SetFloat("time",            mRunningTime);
+					mCreateFrequencyValues_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
+					mCreateFrequencyValues_ComputeShader->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
+					mCreateFrequencyValues_ComputeShader->SetVec2("windVelocity",     mTessendorfData.mWindVelocity);
+
+					mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+					mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+					mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+					mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+
+			break;
+		}
 	}
 
 	// ---------------------------------------------
@@ -810,7 +925,7 @@ namespace Rendering
 		switch (approach)
 		{
 		case SimulationMethods::Sine:
-			mActiveWaterModellingApproach = mWaterMovementComputeShader_Sine;
+			mModellingApproach = SimulationMethods::Sine;
 
 			mSineWaveData.clear();
 
@@ -842,7 +957,7 @@ namespace Rendering
 		break;
 
 		case SimulationMethods::Gerstner:
-			mActiveWaterModellingApproach = mWaterMovementComputeShader_Gerstner;
+			mModellingApproach = SimulationMethods::Gerstner;
 
 			mGersnterWaveData.clear();
 
@@ -874,7 +989,7 @@ namespace Rendering
 		break;
 
 		case SimulationMethods::Tessendorf:
-			mActiveWaterModellingApproach = mWaterMovementComputeShader_Tessendorf;
+			mModellingApproach = SimulationMethods::Tessendorf;
 		break;
 
 		default:

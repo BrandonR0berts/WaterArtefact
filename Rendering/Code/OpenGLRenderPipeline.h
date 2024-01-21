@@ -35,7 +35,8 @@ namespace Rendering
 		Position,
 		Normal,
 		Tangent,
-		Binormal
+		Binormal,
+		H0
 	};
 
 	// -----------------------------------------

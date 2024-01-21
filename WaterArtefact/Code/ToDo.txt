@@ -14,3 +14,5 @@
 - Add water reflection
 - Add water refraction
 - Create depth lookup image for colour of the water
+
+- Add more options for changing camera speed (likely LCtrl and LAlt)

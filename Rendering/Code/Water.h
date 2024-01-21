@@ -100,15 +100,13 @@ namespace Rendering
 	struct TessendorfWaveData final
 	{
 		TessendorfWaveData()
-			: mWaveCount(5)
-			, mWindVelocity(15.0f, 0.0f)
+			: mWindVelocity(0.0, 0.0f)
 			, mGravity(9.81f)
 			, mRepeatAfterTime(10.0f)
 		{
 
 		}
 
-		int                            mWaveCount;
 		Maths::Vector::Vector2D<float> mWindVelocity;
 		float                          mGravity;
 		float                          mRepeatAfterTime;
@@ -155,6 +153,8 @@ namespace Rendering
 		Texture::Texture2D* GetTangentBuffer()    { return mTangentBuffer;    }
 		Texture::Texture2D* GetBinormalBuffer()   { return mBiNormalBuffer;   }
 
+		Texture::Texture2D* GetH0Buffer() { return mH0Buffer; }
+
 		void SetPreset(SimulationMethods approach, char preset);
 
 	private:
@@ -163,6 +163,8 @@ namespace Rendering
 		void SetupBuffers();
 		void SetupShaders();
 		void SetupTextures();
+
+		void GenerateH0();
 
 		void UpdateSineWaveDataSet();
 		void UpdateGerstnerWaveDataSet();
@@ -178,12 +180,16 @@ namespace Rendering
 		// Writes out the new X-Y-Z position of the verticies to an RGB buffer
 		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Sine;
 		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Gerstner;
-		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Tessendorf;
 
-		ShaderPrograms::ShaderProgram* mActiveWaterModellingApproach;
+		ShaderPrograms::ShaderProgram* mGenerateH0_ComputeShader;
+		ShaderPrograms::ShaderProgram* mCreateFrequencyValues_ComputeShader;
+		ShaderPrograms::ShaderProgram* mConvertToHeightValues_ComputeShader;
+
+		SimulationMethods mModellingApproach;
 
 		// Buffer that holds the X-Y-Z output from the compute shader above
 		Texture::Texture2D*            mPositionalBuffer;
+		Texture::Texture2D*            mH0Buffer;
 
 		// Buffer that holds the normal of the point given out by the computer shader
 		Texture::Texture2D*            mNormalBuffer;
@@ -215,6 +221,8 @@ namespace Rendering
 		float                               mHighestLODDimensions;
 		unsigned int                        mDimensions;
 		float                               mDistanceBetweenVerticies;
+
+		unsigned int mTextureResolution;
 
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;

@@ -375,6 +375,11 @@ namespace Rendering
 				mDebugVisualisationOverride = BufferViewOverrideTypes::Binormal;
 			}
 
+			if (ImGui::Button("View H0 buffer"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::H0;
+			}
+
 			if (ImGui::Button("Reset"))
 			{
 				mDebugVisualisationOverride = BufferViewOverrideTypes::None;
@@ -435,6 +440,10 @@ namespace Rendering
 		case BufferViewOverrideTypes::Binormal:
 			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetBinormalBuffer()->GetTextureID());
 			break;
+
+		case BufferViewOverrideTypes::H0:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetH0Buffer()->GetTextureID());
+		break;
 		}
 
 		//float*    projMatrix = &GetActiveCamera()->GetOrthoMatrix()[0][0];
