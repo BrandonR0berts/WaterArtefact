@@ -1,26 +1,11 @@
 #version 430 core
 
-// The resolution of the image is the N in these equations. N determines the amount of waves that are generated.
-
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
-layout(rgba32f, binding = 0) uniform image2D positionOutput;
-
-// --------------------------------------------------------------------------------
-
-uniform float repeatAfterTime;
-uniform vec2  windVelocity;
-uniform float gravity;
-
-// --------------------------------------------------------------------------------
-
-const float phillipsConstant = 1.0;
-const float oneOverRootTwo   = 1.0 / sqrt(2.0);
-const float PI               = 3.141529;
-
-const float dispersionRelation_zero = (2.0 * PI) / repeatAfterTime;
+layout(rgba32f, binding = 0) uniform readonly  image2D fourierDomainInput;
+layout(rgba32f, binding = 1) uniform writeonly image2D worldPositionOutput;
 
 // --------------------------------------------------------------------------------
 
@@ -37,80 +22,22 @@ ComplexNumber MultiplyComplex(ComplexNumber num1, float multiplier)
 
 // --------------------------------------------------------------------------------
 
-// The noise functions are depricated within this version of glsl, so they just return 0
-// So instead this is a custom random number generator
-float RandomNumber(vec2 seed)
-{
-	return fract(sin(dot(seed.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
-// --------------------------------------------------------------------------------
-
-float PhillipsSpectrum(vec2 k)
-{
-	float kSquared      = dot(k, k);
-	float kToTheFour    = kSquared * kSquared;
-
-	vec2  windDirection = normalize(windVelocity);
-	float windSpeed     = length(windVelocity);
-
-	float L             = (windSpeed * windSpeed) / gravity;
-
-	return phillipsConstant * ((exp(-1.0 / (kSquared * L * L))) / kToTheFour) * abs(dot(k, windDirection));
-}
-
-// --------------------------------------------------------------------------------
-
-// Fourier amplitudes of a wave height field
-ComplexNumber hZero(vec2 k, vec2 randomNumberSeed)
-{
-	float multiplier = oneOverRootTwo * sqrt(PhillipsSpectrum(k));
-
-	return MultiplyComplex(ComplexNumber(RandomNumber(randomNumberSeed), RandomNumber(randomNumberSeed)), multiplier);
-}
-
-// --------------------------------------------------------------------------------
-
-vec2 CreateK(float n, float m, float resolution)
-{
-	return vec2((2.0 * PI * n) / resolution,
-	            (2.0 * PI * m) / resolution);
-}
-
-// --------------------------------------------------------------------------------
-
 void main()
 {
-	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
-
-	// 0 -> 1 position for the point on the texture
+	vec4  finalValue = vec4(0.0, 0.0, 0.0, 1.0);
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 resolution = imageSize(fourierDomainInput);
 
-	// Convert the texelcoord into mesh space, (+- half mesh dimensions)
-	int resolution = imageSize(positionOutput).x;
+	for(int z = 0; z < resolution.y; z++)
+	{
+		for(int x = 0; x < resolution.x; x++)
+		{
+			
 
-	// Determine the n and m positions in mesh space, 
-	// These are the 'x' and 'z' relative positions
-	// These need to be calculated to make the centre of the output image essentially 0,0
-	float n = (texelCoord.x - 0.5) * resolution;
-	float m = (texelCoord.y - 0.5) * resolution;
-
-	// Now determine the wave vector 'k'
-	vec2 k = CreateK(n, m, float(resolution));
-
-	// ---------------------------------------------------------- //
-
-	// Generate H0, which will then be passed into the final calculations as a starting point
-	ComplexNumber h0 = hZero(k, texelCoord);
-
-	// ---------------------------------------------------------- //
-
-	finalValue.x = h0.real;
-	finalValue.y = h0.complex;
-
-    imageStore(positionOutput, texelCoord, finalValue);
-
-	// ---------------------------------------------------------- //
+			// Store the calculated value into the texture
+			imageStore(worldPositionOutput, ivec2(x, z), finalValue);
+		}
+	}
 }
 
 // --------------------------------------------------------------------------------

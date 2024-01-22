@@ -153,7 +153,8 @@ namespace Rendering
 		Texture::Texture2D* GetTangentBuffer()    { return mTangentBuffer;    }
 		Texture::Texture2D* GetBinormalBuffer()   { return mBiNormalBuffer;   }
 
-		Texture::Texture2D* GetH0Buffer() { return mH0Buffer; }
+		Texture::Texture2D* GetH0Buffer()                  { return mH0Buffer; }
+		Texture::Texture2D* GetFourierDomainValuesBuffer() { return mFourierDomainValues; }
 
 		void SetPreset(SimulationMethods approach, char preset);
 
@@ -187,9 +188,11 @@ namespace Rendering
 
 		SimulationMethods mModellingApproach;
 
-		// Buffer that holds the X-Y-Z output from the compute shader above
+		// Buffer that holds the world space X-Y-Z 
 		Texture::Texture2D*            mPositionalBuffer;
+
 		Texture::Texture2D*            mH0Buffer;
+		Texture::Texture2D*            mFourierDomainValues;
 
 		// Buffer that holds the normal of the point given out by the computer shader
 		Texture::Texture2D*            mNormalBuffer;

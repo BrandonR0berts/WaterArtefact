@@ -35,6 +35,7 @@ namespace Rendering
 
 		, mPositionalBuffer(nullptr)
 		, mH0Buffer(nullptr)
+		, mFourierDomainValues(nullptr)
 		, mNormalBuffer(nullptr)
 		, mTangentBuffer(nullptr)
 		, mBiNormalBuffer(nullptr)
@@ -136,6 +137,9 @@ namespace Rendering
 		delete mTangentBuffer;
 		mTangentBuffer = nullptr;
 
+		delete mFourierDomainValues;
+		mFourierDomainValues = nullptr;
+
 		// --------------------------------------
 
 		delete mSineWaveSSBO;
@@ -157,9 +161,8 @@ namespace Rendering
 		mGenerateH0_ComputeShader->UseProgram();
 			mH0Buffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-			mGenerateH0_ComputeShader->SetFloat("time",            1.256f);
+			mGenerateH0_ComputeShader->SetFloat("time",            mRunningTime);
 			mGenerateH0_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
-			mGenerateH0_ComputeShader->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
 			mGenerateH0_ComputeShader->SetVec2("windVelocity",     mTessendorfData.mWindVelocity);
 
 			glDispatchCompute(mTextureResolution, mTextureResolution, 1);
@@ -441,6 +444,13 @@ namespace Rendering
 
 			mH0Buffer->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
 		}
+
+		if (!mFourierDomainValues)
+		{
+			mFourierDomainValues = new Texture::Texture2D();
+
+			mFourierDomainValues->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+		}
 	}
 
 	// ---------------------------------------------
@@ -670,6 +680,8 @@ namespace Rendering
 		{
 			case SimulationMethods::Sine:
 
+				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
 				mWaterMovementComputeShader_Sine->UseProgram();
 
 				mWaterMovementComputeShader_Sine->SetFloat("time", mRunningTime);
@@ -679,15 +691,18 @@ namespace Rendering
 
 				mWaterMovementComputeShader_Sine->SetInt("waveCount", (int)mSineWaveData.size());
 
-				mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-				mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-				mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-				mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+				mNormalBuffer    ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+				mTangentBuffer   ->BindForComputeShader(2, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+				mBiNormalBuffer  ->BindForComputeShader(3, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
 			break;
 
 			case SimulationMethods::Gerstner:
+
+				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
 				mWaterMovementComputeShader_Gerstner->UseProgram();
 
 				if (mGerstnerWaveSSBO)
@@ -696,10 +711,10 @@ namespace Rendering
 				mWaterMovementComputeShader_Gerstner->SetFloat("time", mRunningTime);
 				mWaterMovementComputeShader_Gerstner->SetInt("waveCount", (int)mGersnterWaveData.size());
 
-				mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-				mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-				mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-				mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+				mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+				mNormalBuffer    ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+				mTangentBuffer   ->BindForComputeShader(2, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+				mBiNormalBuffer  ->BindForComputeShader(3, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
 
@@ -707,37 +722,33 @@ namespace Rendering
 
 			case SimulationMethods::Tessendorf:
 
+				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
 				// Generate the frequency values
-
 				mCreateFrequencyValues_ComputeShader->UseProgram();
 
 					mCreateFrequencyValues_ComputeShader->SetFloat("time",            mRunningTime);
 					mCreateFrequencyValues_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
 					mCreateFrequencyValues_ComputeShader->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
-					mCreateFrequencyValues_ComputeShader->SetVec2("windVelocity",     mTessendorfData.mWindVelocity);
 
-					mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-					mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-					mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-					mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-
-				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
-
-				// Now convert to world space heights
-
-				mCreateFrequencyValues_ComputeShader->UseProgram();
-
-					mCreateFrequencyValues_ComputeShader->SetFloat("time",            mRunningTime);
-					mCreateFrequencyValues_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
-					mCreateFrequencyValues_ComputeShader->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
-					mCreateFrequencyValues_ComputeShader->SetVec2("windVelocity",     mTessendorfData.mWindVelocity);
-
-					mPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-					mNormalBuffer->BindForComputeShader    (1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-					mTangentBuffer->BindForComputeShader   (2, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-					mBiNormalBuffer->BindForComputeShader  (3, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+					mFourierDomainValues->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); // Output fourier domain values
+					mNormalBuffer       ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); // Normals
+					mTangentBuffer      ->BindForComputeShader(2, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); // Tangent
+					mBiNormalBuffer     ->BindForComputeShader(3, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); // Binormals
+					 
+					mH0Buffer           ->BindForComputeShader(4, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);  // H0 values created at startup
 
 				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+
+				//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+				//// Now convert to world space heights
+				//mCreateFrequencyValues_ComputeShader->UseProgram();
+
+				//	mPositionalBuffer   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY,  GL_RGBA32F);
+				//	mFourierDomainValues->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+				//glDispatchCompute(1, 1, 1);
 
 			break;
 		}

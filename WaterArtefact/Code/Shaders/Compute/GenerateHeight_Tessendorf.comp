@@ -2,50 +2,31 @@
 
 // The resolution of the image is the N in these equations. N determines the amount of waves that are generated.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// This shader is for calculating the current frequency values in the fourier domain.
+// The output of this shader will go into the inverse FFT shader for the final height values
 
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
-layout(rgba32f, binding = 0) uniform image2D positionOutput;
-layout(rgba32f, binding = 1) uniform image2D normalOutput;
-layout(rgba32f, binding = 2) uniform image2D tangentOutput;
-layout(rgba32f, binding = 3) uniform image2D binormalOutput;
+layout(rgba32f, binding = 0) uniform writeonly image2D positionOutput;
+layout(rgba32f, binding = 1) uniform writeonly image2D normalOutput;
+layout(rgba32f, binding = 2) uniform writeonly image2D tangentOutput;
+layout(rgba32f, binding = 3) uniform writeonly image2D binormalOutput;
 
-layout(rgba32f, binding = 4) uniform image2D h0Input;
+layout(rgba32f, binding = 4) uniform readonly image2D h0Input;
 
 // --------------------------------------------------------------------------------
 
 uniform float time;
 
 uniform float repeatAfterTime;
-uniform vec2  windVelocity;
 uniform float gravity;
 
 // --------------------------------------------------------------------------------
 
-const float phillipsConstant = 1.0;
-const float oneOverRootTwo   = 1.0 / sqrt(2.0);
-const float PI               = 3.141529;
-
-const float fractionOfTime          = time - floor(time);
+const float PI                      = 3.141529;
 const float dispersionRelation_zero = (2.0 * PI) / repeatAfterTime;
 
 // --------------------------------------------------------------------------------
@@ -67,54 +48,16 @@ ComplexNumber MultiplyComplex(ComplexNumber num1, ComplexNumber num2)
 	                     (num1.real * num2.complex) + (num1.complex * num2.real));
 }
 
-// --------------------------------------------------------------------------------
-
-// Used for converting freqeuncy space values into positional space values
-float InverseFFT(float value, vec2 worldPosition, vec2 k)
+ComplexNumber Conjugate(ComplexNumber num)
 {
-	return value * exp(dot(k, worldPosition));
+	return ComplexNumber(num.real, -num.complex);
 }
 
-// --------------------------------------------------------------------------------
-
-// The noise functions are depricated within this version of glsl, so they just return 0
-// So instead this is a custom random number generator
-float RandomNumber(vec2 seed)
+ComplexNumber ComplexCast(vec2 inputValues)
 {
-	return fract(sin(dot(seed.xy, vec2(fractionOfTime, 78.233))) * 43758.5453123);
+	return ComplexNumber(inputValues.x, inputValues.y);
 }
 
-// --------------------------------------------------------------------------------
-
-float PhillipsSpectrum(vec2 k)
-{
-	float kSquared      = dot(k, k);
-	float kToTheFour    = kSquared * kSquared;
-
-	vec2  windDirection = normalize(windVelocity);
-	float windSpeed     = length(windVelocity);
-
-	float L             = (windSpeed * windSpeed) / gravity;
-
-	return phillipsConstant * ((exp(-1.0 / (kSquared * L * L))) / kToTheFour) * abs(dot(k, windDirection));
-}
-
-// --------------------------------------------------------------------------------
-
-// Fourier amplitudes of a wave height field
-//float hZero(vec2 k, vec2 randomNumberSeed)
-//{
-//	return oneOverRootTwo * (RandomNumber(randomNumberSeed) + RandomNumber(randomNumberSeed)) * sqrt(PhillipsSpectrum(k, waveNumber));
-//}
-//
-//// --------------------------------------------------------------------------------
-//
-//// Fourier amplitude function
-//float heightFunction(vec2 k, float dispersionRelation, int waveNumber, vec2 randomNumberSeed)
-//{
-//	return (hZero(k, waveNumber, randomNumberSeed) * exp(dispersionRelation * time)) + (hZero(-k, waveNumber, randomNumberSeed) * exp(-dispersionRelation * time));
-//}
-//
 // --------------------------------------------------------------------------------
 
 vec2 CreateK(float n, float m, float resolution)
@@ -125,52 +68,62 @@ vec2 CreateK(float n, float m, float resolution)
 
 // --------------------------------------------------------------------------------
 
+// w(k) = [[w(k)/w0]] * w0
+float CreateDispersion(vec2 k)
+{
+	float magnitudeOfK = k.length();
+	float w            = sqrt(magnitudeOfK * gravity);
+
+	return floor(w / dispersionRelation_zero) * dispersionRelation_zero;
+}
+
+// --------------------------------------------------------------------------------
+
 void main()
 {
 	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
 
 	// 0 -> 1 position for the point on the texture
-	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 
 	// Convert the texelcoord into mesh space, (+- half mesh dimensions)
-	int resolution = imageSize(positionOutput).x;
+	ivec2 resolution = imageSize(positionOutput);
+
+	//vec2  texelCoord           = vec2(pixelCoord) / resolution;
+	ivec2 transposedTexelCoord = ivec2(resolution.x - pixelCoord.x, resolution.y - pixelCoord.y);
 
 	// Determine the n and m positions in mesh space, 
 	// These are the 'x' and 'z' relative positions
 	// These need to be calculated to make the centre of the output image essentially 0,0
-	float n = (texelCoord.x - 0.5) * resolution;
-	float m = (texelCoord.y - 0.5) * resolution;
+	float n = (pixelCoord.x - 0.5) * resolution.x;
+	float m = (pixelCoord.y - 0.5) * resolution.y;
 
-	// Now determine the wave vector 'k'
+	// Wave vector 'k'
 	vec2 k = CreateK(n, m, float(resolution));
 
-	// ---------------------------------------------------------- //
+	// Dispersion relation factor
+	float dispersionRelation = CreateDispersion(k);
+	
+	// Grab the H0 values we are going to be using
+	ComplexNumber h0Normal    = ComplexCast(imageLoad(h0Input, pixelCoord).xy);
+	ComplexNumber h0Transpose = ComplexCast(imageLoad(h0Input, transposedTexelCoord).xy); 
 
-	// For now generate H0 in here, will move it to a pre-generation process eventually
-//	float h0 = ;
-//
-//
-//	// Now calculate the final height
-//
-//
-//	// Dispersion relation
-//	float dispersionRelation = floor(sqrt(gravity * i)) * dispersionRelation_zero;
-//
-//	float finalHeight = 0.0;
-//
-//	float L = maxDistanceFromOrigin * 2.0;
-//
-//		
-//	// Accumulate the height
-//	finalHeight += InverseFFT(heightFunction(k, dispersionRelation, i, texelCoord), worldPos, k);
-//
-//	// ---------------------------------------------------------- //
-//
-//	finalValue.y = PhillipsSpectrum(k, 16);
+	// Convert the exponential equations into sine and cosine using euler's equation
+	// e^^ix = cos(x) + isin(x)
+	ComplexNumber firstHalfFactor  = ComplexNumber(cos(dispersionRelation * time), sin(       dispersionRelation * time));
+	ComplexNumber secondHalfFactor = ComplexNumber(cos(dispersionRelation * time), sin(-1.0 * dispersionRelation * time));
+
+	// Calculate the final fourier domain value
+	// H0(k)e^^iw(k)t + h0transpose(-k)e^^-iw(k)t
+	ComplexNumber outputComplexNumber = AddComplex(MultiplyComplex(h0Normal, firstHalfFactor), MultiplyComplex(Conjugate(h0Transpose), secondHalfFactor));
 
 	// ---------------------------------------------------------- //
 
-    imageStore(positionOutput, texelCoord, finalValue);
+	finalValue.x = outputComplexNumber.real;
+	finalValue.y = outputComplexNumber.complex;	
+
+	// Output the final fourier domain value to the texture
+    imageStore(positionOutput, pixelCoord, finalValue);
 }
 
 // --------------------------------------------------------------------------------

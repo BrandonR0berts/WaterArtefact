@@ -380,6 +380,11 @@ namespace Rendering
 				mDebugVisualisationOverride = BufferViewOverrideTypes::H0;
 			}
 
+			if (ImGui::Button("View Fourier Domain buffer"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::Fourier;
+			}
+
 			if (ImGui::Button("Reset"))
 			{
 				mDebugVisualisationOverride = BufferViewOverrideTypes::None;
@@ -443,6 +448,10 @@ namespace Rendering
 
 		case BufferViewOverrideTypes::H0:
 			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetH0Buffer()->GetTextureID());
+		break;
+
+		case BufferViewOverrideTypes::Fourier:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetFourierDomainValuesBuffer()->GetTextureID());
 		break;
 		}
 

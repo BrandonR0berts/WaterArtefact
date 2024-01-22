@@ -6,13 +6,12 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
-layout(rgba32f, binding = 0) uniform image2D positionOutput;
+layout(rgba32f, binding = 0) uniform writeonly image2D positionOutput;
 
 // --------------------------------------------------------------------------------
 
 uniform float time;
 
-uniform float repeatAfterTime;
 uniform vec2  windVelocity;
 uniform float gravity;
 
@@ -83,13 +82,9 @@ vec2 CreateK(float n, float m, float resolution)
 
 void main()
 {
-	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
-
-	// 0 -> 1 position for the point on the texture
+	vec4  finalValue = vec4(0.0, 0.0, 0.0, 1.0);
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
-
-	// Convert the texelcoord into mesh space, (+- half mesh dimensions)
-	vec2 resolution = imageSize(positionOutput);
+	vec2  resolution = imageSize(positionOutput);
 
 	vec2 texelCoord = vec2(pixelCoord) / resolution;
 
@@ -111,9 +106,6 @@ void main()
 
 	finalValue.x = h0.real;
 	finalValue.y = h0.complex;
-
-	//finalValue.x = PhillipsSpectrum(k);
-	//finalValue.y = RandomNumber(texelCoord.xy);
 
     imageStore(positionOutput, pixelCoord, finalValue);
 

@@ -36,7 +36,8 @@ namespace Rendering
 		Normal,
 		Tangent,
 		Binormal,
-		H0
+		H0,
+		Fourier
 	};
 
 	// -----------------------------------------
