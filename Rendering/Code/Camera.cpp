@@ -218,22 +218,28 @@ namespace Rendering
 		float movementSpeed = mMovementSpeed;
 
 		// Check to see if the slow camera movement button is pressed (side mouse 1)
-		Input::MouseInput::MouseInputDevice* mouse = (Input::MouseInput::MouseInputDevice*)mice[0];
+		Input::MouseInput::MouseInputDevice*       mouse    = (Input::MouseInput::MouseInputDevice*)mice[0];
+		Input::KeyboardInput::KeyboardInputDevice* keyboard = (Input::KeyboardInput::KeyboardInputDevice*)keyboards[0];
 		if (mouse)
 		{
 			if (mouse->QueryInput(Input::MouseInput::MouseInputBitfield::MOUSE_SIDE_1) == Input::ButtonInputState::HELD ||
-				mouse->QueryInput(Input::MouseInput::MouseInputBitfield::MOUSE_SIDE_1) == Input::ButtonInputState::PRESSED)
+				mouse->QueryInput(Input::MouseInput::MouseInputBitfield::MOUSE_SIDE_1) == Input::ButtonInputState::PRESSED ||
+
+				keyboard->QueryInput(Input::KeyboardInput::KeyboardKeys::LEFT_ALT) == Input::ButtonInputState::HELD ||
+				keyboard->QueryInput(Input::KeyboardInput::KeyboardKeys::LEFT_ALT) == Input::ButtonInputState::PRESSED)
 			{
 				movementSpeed = mMovementSpeed / 10.0f;
 			}
 			else if (mouse->QueryInput(Input::MouseInput::MouseInputBitfield::MOUSE_SIDE_2) == Input::ButtonInputState::HELD ||
-				     mouse->QueryInput(Input::MouseInput::MouseInputBitfield::MOUSE_SIDE_2) == Input::ButtonInputState::PRESSED)
+				     mouse->QueryInput(Input::MouseInput::MouseInputBitfield::MOUSE_SIDE_2) == Input::ButtonInputState::PRESSED ||
+				
+					 keyboard->QueryInput(Input::KeyboardInput::KeyboardKeys::LEFT_CONTROL) == Input::ButtonInputState::HELD || 
+					 keyboard->QueryInput(Input::KeyboardInput::KeyboardKeys::LEFT_CONTROL) == Input::ButtonInputState::PRESSED)
 			{
 				movementSpeed = mMovementSpeed * 10.0f;
 			}
 		}
 
-		Input::KeyboardInput::KeyboardInputDevice* keyboard = (Input::KeyboardInput::KeyboardInputDevice*)keyboards[0];
 		if (keyboard)
 		{
 			if (keyboard->QueryInput(Input::KeyboardInput::KeyboardKeys::D) == Input::ButtonInputState::HELD ||

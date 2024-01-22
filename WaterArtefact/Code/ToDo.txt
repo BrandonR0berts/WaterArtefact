@@ -16,3 +16,5 @@
 - Create depth lookup image for colour of the water
 
 - Add more options for changing camera speed (likely LCtrl and LAlt)
+
+- Determine how to properly add random numbers to the H0 shader

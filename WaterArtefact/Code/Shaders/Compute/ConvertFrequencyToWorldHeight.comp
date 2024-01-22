@@ -10,8 +10,6 @@ layout(rgba32f, binding = 0) uniform image2D positionOutput;
 
 // --------------------------------------------------------------------------------
 
-uniform float time;
-
 uniform float repeatAfterTime;
 uniform vec2  windVelocity;
 uniform float gravity;
@@ -22,7 +20,6 @@ const float phillipsConstant = 1.0;
 const float oneOverRootTwo   = 1.0 / sqrt(2.0);
 const float PI               = 3.141529;
 
-const float fractionOfTime          = time - floor(time);
 const float dispersionRelation_zero = (2.0 * PI) / repeatAfterTime;
 
 // --------------------------------------------------------------------------------
@@ -44,7 +41,7 @@ ComplexNumber MultiplyComplex(ComplexNumber num1, float multiplier)
 // So instead this is a custom random number generator
 float RandomNumber(vec2 seed)
 {
-	return fract(sin(dot(seed.xy, vec2(fractionOfTime, 78.233))) * 43758.5453123);
+	return fract(sin(dot(seed.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 // --------------------------------------------------------------------------------

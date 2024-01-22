@@ -43,7 +43,7 @@ ComplexNumber MultiplyComplex(ComplexNumber num1, float multiplier)
 // So instead this is a custom random number generator
 float RandomNumber(vec2 seed)
 {
-	return fract(sin(dot(seed.xy, vec2(fractionOfTime, 78.233))) * 43758.5453123);
+	return fract(sin(dot(seed.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 // --------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ ComplexNumber hZero(vec2 k, vec2 randomNumberSeed)
 {
 	float multiplier = oneOverRootTwo * sqrt(PhillipsSpectrum(k));
 
-	return MultiplyComplex(ComplexNumber(RandomNumber(randomNumberSeed), RandomNumber(randomNumberSeed)), multiplier);
+	return MultiplyComplex(ComplexNumber(RandomNumber(randomNumberSeed), RandomNumber(randomNumberSeed + vec2(1.1, 1.15))), multiplier);
 }
 
 // --------------------------------------------------------------------------------
