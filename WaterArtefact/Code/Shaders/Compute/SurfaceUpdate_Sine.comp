@@ -56,14 +56,51 @@ float CalculateHeight(ivec2 texelCoord)
 
 float CalculateXDeritive(ivec2 texelCoord)
 {
-	return 0.0;
+	float finalValue = 0.0;
+
+	for(int i = 0; i < waveCount; i++)
+	{
+		vec2 direction = vec2(1.0, 1.0);
+
+		if(waves[i].directionOfWaveX > 0.0 || waves[i].directionOfWaveZ > 0.0)
+			direction = normalize(vec2(waves[i].directionOfWaveX, waves[i].directionOfWaveZ));
+	
+		float frequency     = 2.0 / waves[i].waveLength;
+		float phaseConstant = waves[i].speedOfWave * frequency;
+
+		finalValue += frequency * direction.x * waves[i].amplitude * cos((dot(direction, texelCoord) * frequency) + (time * phaseConstant));
+	}
+	
+	return finalValue;
 }
 
 // --------------------------------------------------------
 
 float CalculateYDeritive(ivec2 texelCoord)
 {
-	return 0.0;
+	float finalValue = 0.0;
+
+	for(int i = 0; i < waveCount; i++)
+	{
+		vec2 direction = vec2(1.0, 1.0);
+
+		if(waves[i].directionOfWaveX > 0.0 || waves[i].directionOfWaveZ > 0.0)
+			direction = normalize(vec2(waves[i].directionOfWaveX, waves[i].directionOfWaveZ));
+	
+		float frequency     = 2.0 / waves[i].waveLength;
+		float phaseConstant = waves[i].speedOfWave * frequency;
+
+		finalValue += frequency * direction.y * waves[i].amplitude * cos((dot(direction, texelCoord) * frequency) + (time * phaseConstant));
+	}
+	
+	return finalValue;
+}
+
+// --------------------------------------------------------
+
+vec3 packNormals(vec3 inValue)
+{
+	return (inValue * 0.5) + 0.5;
 }
 
 // --------------------------------------------------------
@@ -87,6 +124,8 @@ void main()
 	finalValue.y = 0.0;
 	finalValue.y = xDeritive;
 
+	finalValue.xyz = packNormals(normalize(finalValue.xyz));
+
 	imageStore(binormalOutput, texelCoord, finalValue);
 
 	// Tangent
@@ -96,12 +135,17 @@ void main()
 	finalValue.y = 1.0;
 	finalValue.y = yDeritive;
 
+	finalValue.xyz = packNormals(normalize(finalValue.xyz));
+
 	imageStore(tangentOutput, texelCoord, finalValue);	
 
 	// Normal
 	finalValue.x = -xDeritive;
-	finalValue.y = -yDeritive;
-	finalValue.z = 1.0;
+	finalValue.y = 1.0;
+	finalValue.z = -yDeritive;
+
+	finalValue.xyz = packNormals(normalize(finalValue.xyz));
+
 	imageStore(normalOutput, texelCoord, finalValue);
 }
 

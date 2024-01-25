@@ -112,6 +112,17 @@ namespace Rendering
 		float                          mRepeatAfterTime;
 	};
 
+	struct Light
+	{
+		Light()
+			: mDirection(0.0f, -1.0f, 0.0f)
+		{
+
+		}
+
+		Maths::Vector::Vector3D<float> mDirection;
+	};
+
 	// ---------------------------------------
 
 	enum class SimulationMethods 
@@ -237,6 +248,8 @@ namespace Rendering
 
 		unsigned int mVertexCount;
 		unsigned int mElementCount;
+
+		Light        mLight;
 
 		// --------------------- Other --------------------- //
 

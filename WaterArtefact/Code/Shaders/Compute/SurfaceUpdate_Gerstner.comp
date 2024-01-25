@@ -43,8 +43,8 @@ vec3 CalculatePosition(vec2 texelCoord, vec2 direction, float frequency, float p
 vec3 CalculateBinormal(vec2 direction, float WA, float S, float C, float steepnessFactor)
 {
 	return vec3(steepnessFactor * direction.x * direction.x * WA * S,
-			    direction.x * WA * C,
-				steepnessFactor * direction.x * direction.y * WA * S);
+			    steepnessFactor * direction.x * direction.y * WA * S,
+				direction.x * WA * C);
 }
 
 // -------------------------------------------------------------------------------------
@@ -52,8 +52,8 @@ vec3 CalculateBinormal(vec2 direction, float WA, float S, float C, float steepne
 vec3 CalculateTangent(vec2 direction, float WA, float S, float C, float steepnessFactor)
 {
 	return vec3(steepnessFactor * direction.x * direction.y * WA * S,
-				direction.y * WA * C,
-				steepnessFactor * direction.y * direction.y * WA * S);
+				steepnessFactor * direction.y * direction.y * WA * S,
+				direction.y * WA * C);
 }
 
 // -------------------------------------------------------------------------------------
@@ -61,8 +61,8 @@ vec3 CalculateTangent(vec2 direction, float WA, float S, float C, float steepnes
 vec3 CalculateNormal(vec2 direction, float WA, float S, float C, float steepnessFactor)
 {
 	return vec3(direction.x * WA * C,
-				steepnessFactor * WA * S,
-				direction.y * WA * C);
+				direction.y * WA * C,
+				steepnessFactor * WA * S);
 }
 
 // -------------------------------------------------------------------------------------
@@ -71,9 +71,9 @@ vec3 CalculateNormal(vec2 direction, float WA, float S, float C, float steepness
 // This code has the Y and Z positions flipped from the link 
 
 // Maps -1->1 to 0->1
-float mapToSaveNegatives(float value)
+vec3 mapToSaveNegatives(vec3 inValue)
 {
-	return (value + 1.0) / 2.0;
+	return (inValue * 0.5) + 0.5;
 }
 
 // ---------------------------------------------------------- //
@@ -147,27 +147,31 @@ void main()
 
 	// ---------------------------------------------------------- //
 
-	finalValue.x = mapToSaveNegatives(1.0 - finalBinormalData.x);
-	finalValue.y = mapToSaveNegatives(-finalBinormalData.z);
-	finalValue.z = mapToSaveNegatives(finalBinormalData.y);
+	finalValue.x = 1.0 - finalBinormalData.x;
+	finalValue.y = -finalBinormalData.z;
+	finalValue.z = finalBinormalData.y;
+
+	finalValue.xyz = mapToSaveNegatives(finalValue.xyz);
 
     imageStore(binormalOutput, texelCoord, finalValue);
 
 	// ---------------------------------------------------------- //
 
-	finalValue.x = mapToSaveNegatives(-finalTangentData.x);
-	finalValue.y = mapToSaveNegatives(1.0 - finalTangentData.z);
-	finalValue.z = mapToSaveNegatives(finalTangentData.y);
+	finalValue.x = -finalTangentData.x;
+	finalValue.y = 1.0 - finalTangentData.z;
+	finalValue.z = finalTangentData.y;
+
+	finalValue.xyz = mapToSaveNegatives(finalValue.xyz);
 
     imageStore(tangentOutput, texelCoord, finalValue);
 
 	// ---------------------------------------------------------- //
 
-	finalNormalData.x = mapToSaveNegatives(-finalNormalData.x);
-	finalNormalData.y = mapToSaveNegatives(-finalNormalData.y);
-	finalNormalData.z = mapToSaveNegatives(1.0 - finalNormalData.z);
+	finalNormalData.x = -finalNormalData.x;
+	finalNormalData.y = -finalNormalData.y;
+	finalNormalData.z = 1.0 - finalNormalData.z;
 
-	finalNormalData = normalize(finalNormalData);
+	finalNormalData.xyz = mapToSaveNegatives(finalValue.xyz);
 
     imageStore(normalOutput, texelCoord, vec4(finalNormalData, 1.0));
 

@@ -91,6 +91,8 @@ namespace Rendering
 
 			void SetBool(std::string name, bool value)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -103,6 +105,8 @@ namespace Rendering
 
 			void SetInt(std::string name, int value)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -115,6 +119,8 @@ namespace Rendering
 
 			void SetUnsignedInt(std::string name, int value)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -127,6 +133,8 @@ namespace Rendering
 
 			void SetFloat(std::string name, float value)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -139,6 +147,8 @@ namespace Rendering
 
 			void SetVec2(std::string name, Maths::Vector::Vector2D<float> value)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -151,6 +161,8 @@ namespace Rendering
 
 			void SetVec2(std::string name, float x, float y)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -163,6 +175,8 @@ namespace Rendering
 
 			void SetVec3(std::string name, Maths::Vector::Vector3D<float> value)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -175,6 +189,8 @@ namespace Rendering
 
 			void SetVec4(std::string name, Maths::Vector::Vector4D<float> value)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -187,6 +203,8 @@ namespace Rendering
 
 			void SetVec3(std::string name, float x, float y, float z)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)
@@ -199,6 +217,8 @@ namespace Rendering
 
 			void SetMat4(std::string name, float* matrix)
 			{
+				UseProgram();
+
 				int uniformLocation = glGetUniformLocation(mShaderProgramID, name.c_str());
 
 				if (uniformLocation != -1)

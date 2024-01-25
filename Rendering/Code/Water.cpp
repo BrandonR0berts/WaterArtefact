@@ -70,6 +70,7 @@ namespace Rendering
 
 		, mWaterEBO(nullptr)
 		, mElementCount(0)
+		, mLight()
 	{
 		// Compute and final render shaders
 		SetupShaders();
@@ -194,9 +195,11 @@ namespace Rendering
 
 			mSurfaceRenderShaders->UseProgram();
 				mSurfaceRenderShaders->SetInt("positionalBuffer", 0);
-				mSurfaceRenderShaders->SetInt("normalBuffer", 1);
-				mSurfaceRenderShaders->SetInt("tangentBuffer", 2);
-				mSurfaceRenderShaders->SetInt("binormalBuffer", 3);
+				mSurfaceRenderShaders->SetInt("normalBuffer",     1);
+				mSurfaceRenderShaders->SetInt("tangentBuffer",    2);
+				mSurfaceRenderShaders->SetInt("binormalBuffer",   3);
+
+				mSurfaceRenderShaders->SetVec3("ambientColour", { 0.7765, 0.902, 0.9255 });
 		}
 
 		// --------------------------------------------------------------
@@ -483,16 +486,22 @@ namespace Rendering
 				if (ImGui::Button("Sine Waves"))
 				{
 					mModellingApproach = SimulationMethods::Sine;
+
+					mSurfaceRenderShaders->SetBool("renderingSineGeneration", true);
 				}
 
 				if (ImGui::Button("Gerstner Waves"))
 				{
 					mModellingApproach = SimulationMethods::Gerstner;
+
+					mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
 				}
 
 				if (ImGui::Button("Ocean simulation"))
 				{
 					mModellingApproach = SimulationMethods::Tessendorf;
+
+					mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
 				}
 			}
 
@@ -563,16 +572,22 @@ namespace Rendering
 					if (ImGui::Button("Calm##sine"))
 					{
 						SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Calm);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", true);
 					}
 
 					if (ImGui::Button("Choppy##sine"))
 					{
 						SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Chopppy);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", true);
 					}
 
 					if (ImGui::Button("Strange##sine"))
 					{
 						SetPreset(Rendering::SimulationMethods::Sine, (char)SineWavePresets::Strange);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", true);
 					}
 				}
 			}
@@ -635,16 +650,22 @@ namespace Rendering
 					if (ImGui::Button("Calm##Gerstner"))
 					{
 						SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Calm);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
 					}
 
 					if (ImGui::Button("Choppy##Gerstner"))
 					{
 						SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Chopppy);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
 					}
 
 					if (ImGui::Button("Strange##Gerstner"))
 					{
 						SetPreset(Rendering::SimulationMethods::Gerstner, (char)GerstnerWavePresets::Strange);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
 					}
 				}
 			}
@@ -661,6 +682,8 @@ namespace Rendering
 				if (ImGui::Button("Defaults##Tessendorf"))
 				{
 					mTessendorfData = TessendorfWaveData();
+
+					mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
 				}
 			}
 
@@ -799,7 +822,9 @@ namespace Rendering
 			glm::mat4 projectionMat = camera->GetPerspectiveMatrix();
 			mSurfaceRenderShaders->SetMat4("projectionMat", &projectionMat[0][0]);
 
-			mSurfaceRenderShaders->SetVec3("cameraPos", camera->GetPosition());
+			mSurfaceRenderShaders->SetVec3("cameraPosition", camera->GetPosition());
+
+			mSurfaceRenderShaders->SetVec3("directionalLightDirection", mLight.mDirection);
 
 			// ------------------------------------------------------------------------------------------------
 
