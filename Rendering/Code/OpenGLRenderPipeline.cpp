@@ -385,6 +385,11 @@ namespace Rendering
 				mDebugVisualisationOverride = BufferViewOverrideTypes::Fourier;
 			}
 
+			if (ImGui::Button("Depth"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::Depth;
+			}
+
 			if (ImGui::Button("Reset"))
 			{
 				mDebugVisualisationOverride = BufferViewOverrideTypes::None;
@@ -453,6 +458,10 @@ namespace Rendering
 		case BufferViewOverrideTypes::Fourier:
 			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetFourierDomainValuesBuffer()->GetTextureID());
 		break;
+
+		case BufferViewOverrideTypes::Depth:
+			BindTextureToTextureUnit(GL_TEXTURE0, mDepthStencilTexture->GetTextureID());
+		break;
 		}
 
 		//float*    projMatrix = &GetActiveCamera()->GetOrthoMatrix()[0][0];
@@ -471,6 +480,8 @@ namespace Rendering
 			// Draw the image to the screen
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
+
+		SetDepthTestEnabled(true);
 	}
 
 	// -------------------------------------------------

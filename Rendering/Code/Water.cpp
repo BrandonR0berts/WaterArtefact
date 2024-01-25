@@ -828,7 +828,15 @@ namespace Rendering
 
 			// ------------------------------------------------------------------------------------------------
 
-			glDisable(GL_CULL_FACE);
+			// Determine if the camera is below the surface of the water, and if so then we need to flip the culling order
+			if(IsBelowSurface(camera->GetPosition()))
+			{
+				glCullFace(GL_FRONT);
+			}
+			else
+			{
+				glCullFace(GL_BACK);
+			}
 
 			// Now handle the LODs
 			for (int i = 0; i <= mLevelOfDetailCount; i++)

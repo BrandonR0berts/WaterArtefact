@@ -63,12 +63,15 @@ void main()
 	// Now find what it has reflected from the skybox
 	vec4 reflectedColour = texture(skyboxImage, reflectedVector);
 
+	vec3 finalColour = vec3(reflectedColour.x * ambientColour.x, 
+	                        reflectedColour.y * ambientColour.y, 
+							reflectedColour.z * ambientColour.z);
 
 
 	//FragColor = vec4(ambientColour, 1.0);
 	//FragColor = vec4(finalNormal.xyz, 1.0);
 	//FragColor = vec4(normal.xyz, 1.0);
-	FragColor = vec4(reflectedColour.rgb, 1.0);
+	FragColor = vec4(finalColour, 1.0);
 	//FragColor = vec4(textureCoords.xy, 0.0, 1.0);
 }
 

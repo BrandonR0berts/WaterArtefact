@@ -216,6 +216,8 @@ namespace Rendering
 
 		// Reset depth func back to default
 		renderPipeline->SetDepthTestFunction(GL_LESS);
+
+		renderPipeline->SetBackFaceCulling(true);
 	}
 
 	// -----------------------------------------
