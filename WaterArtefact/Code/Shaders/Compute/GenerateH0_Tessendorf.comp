@@ -14,10 +14,10 @@ uniform float time;
 
 uniform vec2  windVelocity;
 uniform float gravity;
+uniform float phillipsConstant;
 
 // --------------------------------------------------------------------------------
 
-const float phillipsConstant = 5.0;
 const float oneOverRootTwo   = 1.0 / sqrt(2.0);
 const float PI               = 3.141529;
 
@@ -49,15 +49,18 @@ float RandomNumber(vec2 seed)
 
 float PhillipsSpectrum(vec2 k)
 {
-	float kSquared      = dot(k, k);
-	float kToTheFour    = kSquared * kSquared;
+	float kSquared        = dot(k, k);
+	float kToTheFour      = kSquared * kSquared;
 
-	vec2  windDirection = normalize(windVelocity);
-	float windSpeed     = length(windVelocity);
+	float windSpeed       = length(windVelocity);
+	vec2  windDirection   = vec2(0.0, 0.0);
 
-	float L             = (windSpeed * windSpeed) / gravity;
+	if(windSpeed > 0.0)
+		windDirection = windVelocity / windSpeed;
 
-	return phillipsConstant * ((exp(-1.0 / (kSquared * L * L))) / kToTheFour) * abs(dot(k, windDirection));
+	float L               = (windSpeed * windSpeed) / gravity;
+
+	return phillipsConstant * ((exp(-1.0 / (kSquared * L * L))) / kToTheFour) * abs(dot(normalize(k), windDirection));
 }
 
 // --------------------------------------------------------------------------------
@@ -72,6 +75,8 @@ ComplexNumber hZero(vec2 k, vec2 randomNumberSeed)
 
 // --------------------------------------------------------------------------------
 
+// This may need to be divided by real world distance between points not the whole space?
+// If at larger LODs the scaling is not right then this is likely the issue
 vec2 CreateK(float n, float m, float resolution)
 {
 	return vec2((2.0 * PI * n) / resolution,
@@ -82,7 +87,7 @@ vec2 CreateK(float n, float m, float resolution)
 
 void main()
 {
-	vec4  finalValue = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4  finalValue = vec4(0.0, 0.0, 0.0, 0.0);
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 	vec2  resolution = imageSize(positionOutput);
 

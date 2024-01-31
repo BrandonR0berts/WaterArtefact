@@ -1,44 +1,189 @@
 #version 430 core
 
 // This shader is to convert from fourier domain into world space domain
+// As glsl does not support recursion this shader is very freehand on the implementation of a DFT
+
+// How this works is each run of the shader progresses a step through the butterfly diagram of an FFT
+// the uniforms of jump size determines how far through the diagram we are
+// the amount of times to run this shader is log2(resoultion).
+
+// For an explanation as to how FFTs work see here: https://www.cs.cmu.edu/afs/andrew/scs/cs/15-463/99/pub/www/notes/fourier/fourier.pdf
+
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
-layout(rgba32f, binding = 0) uniform readonly  image2D fourierDomainInput;
-layout(rgba32f, binding = 1) uniform writeonly image2D worldPositionOutput;
+layout(rgba32f, binding = 0) uniform readonly  image2D fourierDomainInput;    // Input complex data
+layout(rgba32f, binding = 1) uniform image2D worldPositionOutput;             // Output data 1
+layout(rgba32f, binding = 2) uniform image2D worldPositionOutput2;            // Output data 2
+
+// The distance to jump through the butterfly diagram
+// should go in the pattern of 1->2->4->8 etc until we hit log2(N)
+uniform int jumpDistance;
+
+// Bool to determine if we need to divide by N at the end of processing
+uniform bool finalStepOfProcessing;
+
+// The pass index we are currently on
+uniform int passCount;
 
 // --------------------------------------------------------------------------------
 
+// Useful functionality
 struct ComplexNumber
 {
 	float real;
 	float complex;
 };
 
-ComplexNumber MultiplyComplex(ComplexNumber num1, float multiplier)
+ComplexNumber DivideComplex(ComplexNumber num1, float factor)
 {
-	return ComplexNumber(num1.real * multiplier, num1.complex * multiplier);
+	return ComplexNumber(num1.real / factor, num1.complex / factor);
+}
+
+ComplexNumber MultiplyComplex(ComplexNumber num1, float factor)
+{
+	return ComplexNumber(num1.real * factor, num1.complex * factor);
+}
+
+ComplexNumber MultiplyComplex(ComplexNumber num1, ComplexNumber num2)
+{
+	return ComplexNumber((num1.real * num2.real)    - (num1.complex * num2.complex), 
+	                     (num1.real * num2.complex) + (num1.complex * num2.real));
+}
+
+ComplexNumber AddComplexNumber(ComplexNumber num1, ComplexNumber num2)
+{
+	return ComplexNumber(num1.real + num2.real, num1.complex + num2.complex);
+}
+
+ComplexNumber ComplexCast(vec2 inputs)
+{
+	return ComplexNumber(inputs.x, inputs.y);
+}
+
+const float PI = 3.141529;
+
+// --------------------------------------------------------------------------------
+
+// resolution needs to be a power of 2
+// This function flips the order of the bits input
+// For example: 001001 -> 100100
+int BitReversal(int inputVal, int resoultion)
+{
+	return inputVal & (resoultion - 1);
 }
 
 // --------------------------------------------------------------------------------
 
 void main()
 {
-	vec4  finalValue = vec4(0.0, 0.0, 0.0, 1.0);
+	// ----------------------------------------------------------------------------------
+
+	// true means reading from positional data 2 and outputting to 1
+	// false means reading from positional data 1 and outputting to 2
+	bool baseReadingConfiguration = (mod(passCount, 2) == 0);
+
+	// Get the current pixel we are processing
 	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-	ivec2 resolution = imageSize(fourierDomainInput);
 
-	for(int z = 0; z < resolution.y; z++)
+	// Image resoultion - X and Y dimensions should be the same and a power of 2
+	ivec2 resolution    = imageSize(fourierDomainInput);
+	int   totalElements = resolution.x * resolution.y;
+
+	// ----------------------------------------------------------------------------------
+
+	// Data point 1
+	int oneDimensionCoord = texelCoord.x + (texelCoord.y * resolution.x);       // Convert this pixel into a 1D coord
+
+	// Determine if we are in a portion we need to skip, due to each call calculating two elements
+	int multiple = int(mod(oneDimensionCoord, 2 * jumpDistance));
+
+	if(multiple >= jumpDistance)
 	{
-		for(int x = 0; x < resolution.x; x++)
-		{
-			
+		// adjust back into the top half of this section
+		oneDimensionCoord -= jumpDistance;
 
-			// Store the calculated value into the texture
-			imageStore(worldPositionOutput, ivec2(x, z), finalValue);
-		}
+		// Skip to the other half of the image, relative to where we are into this first half
+		oneDimensionCoord += totalElements / 2;
 	}
+
+	int   bitReversalCoord        = BitReversal(oneDimensionCoord, totalElements);       // Calculate where in the bit reversal order this index is - aka jump to the right position in the data
+	ivec2 firstPixelCoord         = ivec2(mod(bitReversalCoord, resolution.x), bitReversalCoord / resolution.x);
+
+	// -------------------
+
+	// Data point 2 - this point is the first one plus the jump amount down
+	int   secondOneDimensionCoord = oneDimensionCoord + jumpDistance;
+	int   secondBitReversalCoord  = BitReversal(secondOneDimensionCoord, totalElements);
+	ivec2 secondPixelCoord        = ivec2(mod(secondBitReversalCoord, resolution.x), secondBitReversalCoord / resolution.x);
+
+	// Grab the input data from the correct buffer
+	ComplexNumber firstInputData;
+	ComplexNumber secondInputData;
+	if(passCount == 0)
+	{
+		firstInputData  = ComplexCast(imageLoad(fourierDomainInput, firstPixelCoord).xy);
+		secondInputData = ComplexCast(imageLoad(fourierDomainInput, secondPixelCoord).xy);
+	}
+	else if(baseReadingConfiguration)
+	{
+		firstInputData  = ComplexCast(imageLoad(worldPositionOutput2, firstPixelCoord).xy);
+		secondInputData = ComplexCast(imageLoad(worldPositionOutput2, secondPixelCoord).xy);
+	}
+	else
+	{
+		firstInputData  = ComplexCast(imageLoad(worldPositionOutput, firstPixelCoord).xy);
+		secondInputData = ComplexCast(imageLoad(worldPositionOutput, secondPixelCoord).xy);
+	}
+
+	// ----------------------------------------------------------------------------------
+
+	// Determine what the fourier multiplier for this stage is
+	// W = exp((2 * PI * k) / N)
+	// Where k is the current 
+	float internalFactor = (2.0 * PI * float(multiple)) / (2.0 * float(jumpDistance));
+
+	ComplexNumber factor;
+	factor.real          = cos(internalFactor);
+	factor.complex       = sin(internalFactor);
+
+	// Run the calculation for this stage of the butterfly diagram 
+	ComplexNumber multipliedFactor = MultiplyComplex(factor, secondInputData);
+	ComplexNumber firstResult      = AddComplexNumber(firstInputData,  multipliedFactor);
+	ComplexNumber secondResult     = AddComplexNumber(firstInputData, MultiplyComplex(multipliedFactor, -1.0));
+
+	if(finalStepOfProcessing)
+	{
+		firstResult  = DivideComplex(firstResult, float(totalElements));
+		secondResult = DivideComplex(secondResult, float(totalElements));
+	}
+
+	// ----------------------------------------------------------------------------------
+
+	// Output the results calculated into the buffer for the next pass (or if this is the final pass, as the final result)
+	// Determine which buffer we are outputting to
+	ivec2 texelCoord1 = ivec2(mod(oneDimensionCoord,       resolution.x), oneDimensionCoord       / resolution.x);
+	ivec2 texelCoord2 = ivec2(mod(secondOneDimensionCoord, resolution.x), secondOneDimensionCoord / resolution.x);
+
+	if(baseReadingConfiguration)
+	{	
+		//imageStore(worldPositionOutput, texelCoord1, vec4(1.0,  0.0, 0.0, 0.0));
+		//imageStore(worldPositionOutput, texelCoord2, vec4(0.0, 1.0, 0.0, 0.0));
+
+		imageStore(worldPositionOutput, texelCoord1, vec4(firstResult.real,  firstResult.complex, 0.0, 0.0));
+		imageStore(worldPositionOutput, texelCoord2, vec4(secondResult.real, secondResult.complex, 0.0, 0.0));
+	}
+	else
+	{
+		//imageStore(worldPositionOutput2, texelCoord1, vec4(1.0,  0.0, 0.0, 0.0));
+	//	imageStore(worldPositionOutput2, texelCoord2, vec4(0.0, 1.0, 0.0, 0.0));
+
+		imageStore(worldPositionOutput2, texelCoord1, vec4(firstResult.real,  firstResult.complex, 0.0, 0.0));
+		imageStore(worldPositionOutput2, texelCoord2, vec4(secondResult.real, secondResult.complex, 0.0, 0.0));
+	}
+
+	// ----------------------------------------------------------------------------------
 }
 
 // --------------------------------------------------------------------------------

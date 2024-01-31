@@ -141,6 +141,8 @@ namespace Rendering
 		bool                        mDisplayCameraDebugInfo;
 		static bool                 mActiveModelLineMode;
 
+		static float                kTimePerUpdate;
+
 		// -----
 	};
 

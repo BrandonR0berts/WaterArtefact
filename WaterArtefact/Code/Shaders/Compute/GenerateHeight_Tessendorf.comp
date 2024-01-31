@@ -81,7 +81,7 @@ float CreateDispersion(vec2 k)
 
 void main()
 {
-	vec4 finalValue = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 finalValue = vec4(0.0, 0.0, 0.0, 0.0);
 
 	// 0 -> 1 position for the point on the texture
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
@@ -89,14 +89,16 @@ void main()
 	// Convert the texelcoord into mesh space, (+- half mesh dimensions)
 	ivec2 resolution = imageSize(positionOutput);
 
-	//vec2  texelCoord           = vec2(pixelCoord) / resolution;
-	ivec2 transposedTexelCoord = ivec2(resolution.x - pixelCoord.x, resolution.y - pixelCoord.y);
+	vec2  texelCoord           = vec2(pixelCoord) / float(resolution.x);
+
+	// To transpose a matrix you swap the indexes of the row and the column
+	ivec2 transposedTexelCoord = ivec2(pixelCoord.y, pixelCoord.x);
 
 	// Determine the n and m positions in mesh space, 
 	// These are the 'x' and 'z' relative positions
 	// These need to be calculated to make the centre of the output image essentially 0,0
-	float n = (pixelCoord.x - 0.5) * resolution.x;
-	float m = (pixelCoord.y - 0.5) * resolution.y;
+	float n = (texelCoord.x - 0.5) * resolution.x;
+	float m = (texelCoord.y - 0.5) * resolution.y;
 
 	// Wave vector 'k'
 	vec2 k = CreateK(n, m, float(resolution));
@@ -110,8 +112,8 @@ void main()
 
 	// Convert the exponential equations into sine and cosine using euler's equation
 	// e^^ix = cos(x) + isin(x)
-	ComplexNumber firstHalfFactor  = ComplexNumber(cos(dispersionRelation * time), sin(       dispersionRelation * time));
-	ComplexNumber secondHalfFactor = ComplexNumber(cos(dispersionRelation * time), sin(-1.0 * dispersionRelation * time));
+	ComplexNumber firstHalfFactor  = ComplexNumber(cos(dispersionRelation * time),        sin(dispersionRelation * time));
+	ComplexNumber secondHalfFactor = ComplexNumber(cos(dispersionRelation * time), -1.0 * sin(dispersionRelation * time));
 
 	// Calculate the final fourier domain value
 	// H0(k)e^^iw(k)t + h0transpose(-k)e^^-iw(k)t

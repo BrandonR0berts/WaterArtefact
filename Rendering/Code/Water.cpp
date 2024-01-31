@@ -34,6 +34,7 @@ namespace Rendering
 		, mModellingApproach(SimulationMethods::Sine)
 
 		, mPositionalBuffer(nullptr)
+		, mSecondPositionalBuffer(nullptr)
 		, mH0Buffer(nullptr)
 		, mFourierDomainValues(nullptr)
 		, mNormalBuffer(nullptr)
@@ -61,6 +62,8 @@ namespace Rendering
 
 		, mTextureResolution(1024)
 
+		, mPhilipsConstant(0.2f)
+
 		, mWaterVAO(nullptr)
 
 		, mSurfaceRenderShaders(nullptr)
@@ -70,7 +73,9 @@ namespace Rendering
 
 		, mWaterEBO(nullptr)
 		, mElementCount(0)
-		, mLight()
+		, mRenderingData()
+
+		, debugStepDistance(2)
 	{
 		// Compute and final render shaders
 		SetupShaders();
@@ -129,6 +134,9 @@ namespace Rendering
 		delete mPositionalBuffer;
 		mPositionalBuffer = nullptr;
 
+		delete mSecondPositionalBuffer;
+		mSecondPositionalBuffer = nullptr;
+
 		delete mNormalBuffer;
 		mNormalBuffer = nullptr;
 
@@ -162,9 +170,10 @@ namespace Rendering
 		mGenerateH0_ComputeShader->UseProgram();
 			mH0Buffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-			mGenerateH0_ComputeShader->SetFloat("time",            mRunningTime);
-			mGenerateH0_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
-			mGenerateH0_ComputeShader->SetVec2("windVelocity",     mTessendorfData.mWindVelocity);
+			mGenerateH0_ComputeShader->SetFloat("time",             mRunningTime);
+			mGenerateH0_ComputeShader->SetFloat("gravity",          mTessendorfData.mGravity);
+			mGenerateH0_ComputeShader->SetVec2("windVelocity",      mTessendorfData.mWindVelocity);
+			mGenerateH0_ComputeShader->SetFloat("phillipsConstant", mPhilipsConstant);
 
 			glDispatchCompute(mTextureResolution, mTextureResolution, 1);
 	}
@@ -199,7 +208,7 @@ namespace Rendering
 				mSurfaceRenderShaders->SetInt("tangentBuffer",    2);
 				mSurfaceRenderShaders->SetInt("binormalBuffer",   3);
 
-				mSurfaceRenderShaders->SetVec3("ambientColour", { 0.7765, 0.902, 0.9255 });
+				mSurfaceRenderShaders->SetVec3("ambientColour", { 0.7765f, 0.902f, 0.9255f });
 		}
 
 		// --------------------------------------------------------------
@@ -420,6 +429,13 @@ namespace Rendering
 			mPositionalBuffer->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA, { GL_LINEAR, GL_NEAREST }, {});
 		}
 
+		if (!mSecondPositionalBuffer)
+		{
+			mSecondPositionalBuffer = new Texture::Texture2D();
+
+			mSecondPositionalBuffer->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA, { GL_LINEAR, GL_NEAREST }, {});
+		}
+
 		if (!mNormalBuffer)
 		{
 			mNormalBuffer = new Texture::Texture2D();
@@ -511,6 +527,18 @@ namespace Rendering
 				if (mLevelOfDetailCount < 0)
 					mLevelOfDetailCount = 0;
 			}
+
+			if (ImGui::DragFloat3("Directional light direction", &mRenderingData.mLightDirection.x, 0.01f, -1.0f, 1.0f))
+			{
+				mRenderingData.mLightDirection.Normalise();
+			}
+
+			// Water colour
+			ImGui::DragFloat3("Water colour", &mRenderingData.mWaterColour.x, 0.001f, 0.0f, 2.0f);
+
+			ImGui::DragFloat("Reflection Proportion", &mRenderingData.mReflectionFactor, 0.001f, 0.0f, 1.0f);
+
+			ImGui::DragFloat3("Ambient colour", &mRenderingData.mAmbientColour.x, 0.001f, 0.0f, 1.0f);
 		ImGui::End();
 
 		
@@ -676,6 +704,11 @@ namespace Rendering
 					GenerateH0();
 				}
 
+				if (ImGui::InputFloat("Phillips Constant", &mPhilipsConstant))
+				{
+					GenerateH0();
+				}
+
 				ImGui::InputFloat("Gravity##Tessendorf",           &mTessendorfData.mGravity);
 				ImGui::InputFloat("Repeat After Time##Tessendorf", &mTessendorfData.mRepeatAfterTime);
 
@@ -684,6 +717,16 @@ namespace Rendering
 					mTessendorfData = TessendorfWaveData();
 
 					mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
+				}
+
+				if (ImGui::InputInt("debug step", &debugStepDistance, 1, 1))
+				{
+					int maxCount = log2(mTextureResolution) * 2;
+
+					if (debugStepDistance < 0)
+						debugStepDistance = 0;
+					else if (debugStepDistance > maxCount)
+						debugStepDistance = maxCount;
 				}
 			}
 
@@ -763,16 +806,29 @@ namespace Rendering
 
 				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
 
-				//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-				//// Now convert to world space heights
-				//mCreateFrequencyValues_ComputeShader->UseProgram();
+				// Now convert to world space heights
+				// Determine how many passess are needed
+				unsigned int passCount = std::log2(mTextureResolution) * 2; // * 2 as this is a 2D texture, not a 1D set of data
 
-				//	mPositionalBuffer   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY,  GL_RGBA32F);
-				//	mFourierDomainValues->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+				for(unsigned int i = 0; i < debugStepDistance; i++)
+				{
+					glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+					
+					mConvertToHeightValues_ComputeShader->UseProgram();
 
-				//glDispatchCompute(1, 1, 1);
+						mFourierDomainValues   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+						mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+						mSecondPositionalBuffer->BindForComputeShader(2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
+						mConvertToHeightValues_ComputeShader->SetBool("finalStepOfProcessing", i == (passCount - 1));
+						mConvertToHeightValues_ComputeShader->SetInt("jumpDistance",           std::pow(2.0, i));
+						mConvertToHeightValues_ComputeShader->SetInt("passCount",              i);
+
+					// Divide by 2 as each shader call stores 2 values
+					glDispatchCompute(mTextureResolution, mTextureResolution / 2, 1);
+				}
 			break;
 		}
 	}
@@ -782,7 +838,7 @@ namespace Rendering
 	void WaterSimulation::Render(Rendering::Camera* camera, Texture::CubeMapTexture* skybox)
 	{
 		// Existance checks
-		if (!mWaterVAO || !mWaterVBO || !mPositionalBuffer || !mNormalBuffer || !mTangentBuffer || !mBiNormalBuffer || !mSurfaceRenderShaders)
+		if (!mWaterVAO || !mWaterVBO || !mPositionalBuffer || !mSecondPositionalBuffer || !mNormalBuffer || !mTangentBuffer || !mBiNormalBuffer || !mSurfaceRenderShaders)
 			return;
 
 		// Rendering of the surface is done through passing the positional texture into the vertex shader to create the final world position
@@ -802,7 +858,13 @@ namespace Rendering
 			renderPipeline->SetLineModeEnabled(mWireframe);
 
 			// Textures
-			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mPositionalBuffer->GetTextureID(), true);
+
+			// If we are using the tessendorf approach, and the amount of passes required to fully finish the FFTs is odd, then the final data will be in the second buffer instead of the main one 
+			if(mModellingApproach == SimulationMethods::Tessendorf && (int)std::log2(mTextureResolution) % 2 == 1)
+				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mSecondPositionalBuffer->GetTextureID(), true);
+			else
+				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mPositionalBuffer->GetTextureID(), true);
+
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE1, mNormalBuffer->GetTextureID(),     true);
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE2, mTangentBuffer->GetTextureID(),    true);
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE3, mBiNormalBuffer->GetTextureID(),   true);
@@ -824,7 +886,10 @@ namespace Rendering
 
 			mSurfaceRenderShaders->SetVec3("cameraPosition", camera->GetPosition());
 
-			mSurfaceRenderShaders->SetVec3("directionalLightDirection", mLight.mDirection);
+			mSurfaceRenderShaders->SetVec3("directionalLightDirection", mRenderingData.mLightDirection);
+			mSurfaceRenderShaders->SetFloat("reflectionProportion",     mRenderingData.mReflectionFactor);
+			mSurfaceRenderShaders->SetVec3("waterColour",               mRenderingData.mWaterColour);
+			mSurfaceRenderShaders->SetVec3("ambientColour",             mRenderingData.mAmbientColour);
 
 			// ------------------------------------------------------------------------------------------------
 
@@ -841,7 +906,7 @@ namespace Rendering
 			// Now handle the LODs
 			for (int i = 0; i <= mLevelOfDetailCount; i++)
 			{
-				float                          LODscaleFactor = std::powf(3, i);
+				float                          LODscaleFactor = std::powf(3.0f, i);
 				float                          dimensions     = (mHighestLODDimensions * LODscaleFactor) * 2.0f;
 
 				Maths::Vector::Vector2D<float> backLeftPos    = Maths::Vector::Vector2D<float>(-dimensions, -dimensions);

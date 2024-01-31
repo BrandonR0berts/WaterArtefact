@@ -279,16 +279,16 @@ namespace Rendering
 
 	// -------------------------------------------------
 
-	void OpenGLRenderPipeline::Update(const float deltaTime)
+	void OpenGLRenderPipeline::Update(const float deltaTime, bool updateWater, float delayedUpdateDeltaTime)
 	{
 		if (mActiveCamera)
 		{
 			mActiveCamera->Update(deltaTime);
 		}
 
-		if (mWaterSimulation)
+		if (mWaterSimulation && updateWater)
 		{
-			mWaterSimulation->Update(deltaTime);
+			mWaterSimulation->Update(delayedUpdateDeltaTime);
 		}
 	}
 
@@ -329,7 +329,8 @@ namespace Rendering
 			// Render the sub-surface models
 
 			// Render the water's surface
-			mWaterSimulation->Render(mActiveCamera, mSkybox->GetCubeMapTexture());
+			//mWaterSimulation->Render(mActiveCamera, mSkybox->GetCubeMapTexture());
+			mWaterSimulation->Render(mActiveCamera, mSkybox->GetConvolutedTexture());
 
 			// Render everything above the surface
 		}
@@ -383,6 +384,11 @@ namespace Rendering
 			if (ImGui::Button("View Fourier Domain buffer"))
 			{
 				mDebugVisualisationOverride = BufferViewOverrideTypes::Fourier;
+			}
+
+			if (ImGui::Button("View positional buffer 2 : used for ping ponging FFT calculations"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::Position2;
 			}
 
 			if (ImGui::Button("Depth"))
@@ -461,6 +467,10 @@ namespace Rendering
 
 		case BufferViewOverrideTypes::Depth:
 			BindTextureToTextureUnit(GL_TEXTURE0, mDepthStencilTexture->GetTextureID());
+		break;
+
+		case BufferViewOverrideTypes::Position2:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetPositionalBuffer2()->GetTextureID());
 		break;
 		}
 

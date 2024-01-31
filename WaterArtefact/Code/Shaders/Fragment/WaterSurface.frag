@@ -1,5 +1,21 @@
 #version 330 core
 
+
+// Fresnel effect
+// thinmatrix videos
+
+// Refraction
+// Use existing 
+
+// Sub surface scattering
+// https://unitywatershader.wordpress.com/2018/05/19/subsurface-scattering/
+// https://www.alanzucconi.com/2017/08/30/fast-subsurface-scattering-1/
+
+
+
+
+
+
 out vec4 FragColor;
 
 // ----------------------------------------------------------------
@@ -10,12 +26,26 @@ uniform sampler2D binormalBuffer;
 
 uniform sampler2D positionalBuffer;
 
-uniform vec3      cameraPosition;
-uniform vec3      directionalLightDirection;
+// ----------------------------------------------------------------
 
+// Eye position
+uniform vec3        cameraPosition;
+
+// Sun direction
+uniform vec3        directionalLightDirection;
+
+// Skybox being reflected
 uniform samplerCube skyboxImage;
 
+// How clear the reflection of the sky is visible in the water
+uniform float       reflectionProportion;
+
+// The colour of the water
+uniform vec3        waterColour;
+
+// The ambient brightness of the ocean
 uniform vec3        ambientColour;
+
 
 uniform bool        renderingSineGeneration;
 
@@ -33,17 +63,40 @@ vec3 unpackMappedValues(vec3 value)
 
 // ----------------------------------------------------------------
 
+vec3 CalculateDiffuse(vec3 normal)
+{
+	return vec3(max(dot(normal, directionalLightDirection), 0.0));
+}
+
+// ----------------------------------------------------------------
+
+vec3 CalculateSpecular(vec3 normal, vec3 viewDirection)
+{
+	float specularStrength = 0.5;
+
+	vec3 reflectDirection = reflect(-directionalLightDirection, normal);
+	float specularPortion = pow(max(dot(viewDirection, reflectDirection), 0.0), 64);
+	
+	return vec3(specularPortion * specularStrength);
+}
+
+// ----------------------------------------------------------------
+
 void main()
 {
+	// ----------------------------------------------------------------
+
 	// Read data from buffers
 	vec4 normal         = texture(normalBuffer,   textureCoords);
 	vec3 unpackedNormal = normalize(unpackMappedValues(normal.xyz));
 
-	vec4 readTangent  = texture(tangentBuffer,  textureCoords);
-	vec4 readBinormal = texture(binormalBuffer, textureCoords);
+	vec4 readTangent    = texture(tangentBuffer,  textureCoords);
+	vec4 readBinormal   = texture(binormalBuffer, textureCoords);
 
-	vec3 tangent  = unpackMappedValues(readTangent.xyz);
-	vec3 binormal = unpackMappedValues(readBinormal.xyz);
+	vec3 tangent        = unpackMappedValues(readTangent.xyz);
+	vec3 binormal       = unpackMappedValues(readBinormal.xyz);
+
+	// ----------------------------------------------------------------
 
 	// Need to differentiate due to sine waves outputting their data in world space and gerstner waves in tangent space
 	if(!renderingSineGeneration)
@@ -56,23 +109,20 @@ void main()
 		binormal       = surfaceToWorldMatrix * binormal;
 	}
 
-	vec3 toPixel = normalize(worldPosition - cameraPosition);
+	// ----------------------------------------------------------------
 
-	vec3 reflectedVector = reflect(toPixel, unpackedNormal);
+	// pixel to camera direction
+	vec3 toCamera = normalize(cameraPosition - worldPosition);
 
-	// Now find what it has reflected from the skybox
-	vec4 reflectedColour = texture(skyboxImage, reflectedVector);
+	// Calculate fresnel effect
+	float refractiveFactor = dot(toCamera, unpackedNormal);
 
-	vec3 finalColour = vec3(reflectedColour.x * ambientColour.x, 
-	                        reflectedColour.y * ambientColour.y, 
-							reflectedColour.z * ambientColour.z);
+	//vec3 finalColour 
 
+	// Mix in the colour of the water
+	//finalColour = mix(finalColour, waterColour, 0.2);
 
-	//FragColor = vec4(ambientColour, 1.0);
-	//FragColor = vec4(finalNormal.xyz, 1.0);
-	//FragColor = vec4(normal.xyz, 1.0);
-	FragColor = vec4(finalColour, 1.0);
-	//FragColor = vec4(textureCoords.xy, 0.0, 1.0);
+	FragColor = vec4(0.0, 0.2, 0.7, 1.0);
 }
 
 // ----------------------------------------------------------------

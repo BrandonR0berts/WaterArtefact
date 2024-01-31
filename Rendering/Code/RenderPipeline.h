@@ -20,8 +20,8 @@ namespace Rendering
 		virtual ~RenderPipeline();
 
 		// Functionality that needs to be defined by the child renderpipeline
-		virtual void                     Update(const float deltaTime) = 0;
-		virtual void                     Render()                      = 0;
+		virtual void                     Update(const float deltaTime, bool updateWater, float delayedUpdateDeltaTime) = 0;
+		virtual void                     Render()                                        = 0;
 
 		// ---------------------------------------------------------------- //
 

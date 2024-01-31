@@ -100,7 +100,7 @@ namespace Rendering
 	struct TessendorfWaveData final
 	{
 		TessendorfWaveData()
-			: mWindVelocity(0.0, 0.0f)
+			: mWindVelocity(15.0f, 0.1f)
 			, mGravity(9.81f)
 			, mRepeatAfterTime(10.0f)
 		{
@@ -112,15 +112,21 @@ namespace Rendering
 		float                          mRepeatAfterTime;
 	};
 
-	struct Light
+	struct RenderingWaterData
 	{
-		Light()
-			: mDirection(0.0f, -1.0f, 0.0f)
+		RenderingWaterData()
+			: mWaterColour(0.2431f, 0.337f, 0.7176f)
+			, mAmbientColour(0.1f, 0.1f, 0.2f)
+			, mLightDirection(0.1f, -1.0f, 0.1f)
+			, mReflectionFactor(1.0f)
 		{
-
+			mLightDirection.Normalise();
 		}
 
-		Maths::Vector::Vector3D<float> mDirection;
+		Maths::Vector::Vector3D<float> mWaterColour;
+		Maths::Vector::Vector3D<float> mAmbientColour;
+		Maths::Vector::Vector3D<float> mLightDirection;
+		float                          mReflectionFactor;
 	};
 
 	// ---------------------------------------
@@ -159,15 +165,18 @@ namespace Rendering
 
 		bool IsBelowSurface(Maths::Vector::Vector3D<float> position);
 
-		Texture::Texture2D* GetPositionalBuffer() { return mPositionalBuffer; }
-		Texture::Texture2D* GetNormalBuffer()     { return mNormalBuffer;     }
-		Texture::Texture2D* GetTangentBuffer()    { return mTangentBuffer;    }
-		Texture::Texture2D* GetBinormalBuffer()   { return mBiNormalBuffer;   }
+		Texture::Texture2D* GetPositionalBuffer()  { return mPositionalBuffer; }
+		Texture::Texture2D* GetPositionalBuffer2() { return mSecondPositionalBuffer; }
+		Texture::Texture2D* GetNormalBuffer()      { return mNormalBuffer;     }
+		Texture::Texture2D* GetTangentBuffer()     { return mTangentBuffer;    }
+		Texture::Texture2D* GetBinormalBuffer()    { return mBiNormalBuffer;   }
 
 		Texture::Texture2D* GetH0Buffer()                  { return mH0Buffer; }
 		Texture::Texture2D* GetFourierDomainValuesBuffer() { return mFourierDomainValues; }
 
 		void SetPreset(SimulationMethods approach, char preset);
+
+		int debugStepDistance;
 
 	private:
 		void PerformanceTesting();
@@ -201,6 +210,7 @@ namespace Rendering
 
 		// Buffer that holds the world space X-Y-Z 
 		Texture::Texture2D*            mPositionalBuffer;
+		Texture::Texture2D*            mSecondPositionalBuffer; // Needed for the tessendorf FFT generation
 
 		Texture::Texture2D*            mH0Buffer;
 		Texture::Texture2D*            mFourierDomainValues;
@@ -238,6 +248,8 @@ namespace Rendering
 
 		unsigned int mTextureResolution;
 
+		float        mPhilipsConstant;
+
 		// --------------------- Rendering surface --------------------- //
 		Buffers::VertexArrayObject*    mWaterVAO;
 
@@ -249,7 +261,7 @@ namespace Rendering
 		unsigned int mVertexCount;
 		unsigned int mElementCount;
 
-		Light        mLight;
+		RenderingWaterData        mRenderingData;
 
 		// --------------------- Other --------------------- //
 

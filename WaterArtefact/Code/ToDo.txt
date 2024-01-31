@@ -1,20 +1,15 @@
 - Determine which sections need their times captured
 - Create functionality for running a test that ImGui will hook into
 
-- Add tessendorf appraoch
-	- Solve how to represent an FFT (and complex numbers) in code
-
 - Add outputting of normals and tangents from the compute shaders
-	- Sine waves
 	- Gerstner waves
 	- Tessendorf approach
 
 - Add imgui way of swapping skyboxes
 
-- Add water reflection
 - Add water refraction
 - Create depth lookup image for colour of the water
 
-- Add more options for changing camera speed (likely LCtrl and LAlt)
-
 - Determine how to properly add random numbers to the H0 shader
+
+- Specular highlights

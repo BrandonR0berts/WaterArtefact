@@ -38,7 +38,8 @@ namespace Rendering
 		Binormal,
 		H0,
 		Fourier,
-		Depth
+		Depth,
+		Position2
 	};
 
 	// -----------------------------------------
@@ -50,8 +51,8 @@ namespace Rendering
 		OpenGLRenderPipeline();
 		~OpenGLRenderPipeline() override;
 
-		void Update(const float deltaTime) override;
-		void Render()                      override;
+		void Update(const float deltaTime, bool updateWater, float delayedUpdateDeltaTime) override;
+		void Render()                                                                      override;
 
 		// -------------------------------------------- //
 
