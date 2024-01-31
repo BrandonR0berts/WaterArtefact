@@ -41,7 +41,6 @@ namespace Rendering
 		, mTangentBuffer(nullptr)
 		, mBiNormalBuffer(nullptr)
 
-		, mFFTConfigurations()
 		, mRunningTime(0.0f)
 
 		, mSineWaveData()
@@ -127,10 +126,6 @@ namespace Rendering
 
 		// --------------------------------------
 
-		mFFTConfigurations.clear();
-
-		// --------------------------------------
-
 		delete mPositionalBuffer;
 		mPositionalBuffer = nullptr;
 
@@ -170,7 +165,6 @@ namespace Rendering
 		mGenerateH0_ComputeShader->UseProgram();
 			mH0Buffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-			mGenerateH0_ComputeShader->SetFloat("time",             mRunningTime);
 			mGenerateH0_ComputeShader->SetFloat("gravity",          mTessendorfData.mGravity);
 			mGenerateH0_ComputeShader->SetVec2("windVelocity",      mTessendorfData.mWindVelocity);
 			mGenerateH0_ComputeShader->SetFloat("phillipsConstant", mPhilipsConstant);

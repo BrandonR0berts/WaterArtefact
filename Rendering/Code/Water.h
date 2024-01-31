@@ -1,6 +1,5 @@
 #pragma once
 
-#include "FFT.h"
 #include "Maths/Code/Vector.h"
 
 #include <vector>
@@ -223,9 +222,6 @@ namespace Rendering
 
 		// Buffer that holds the BiNormal of the point given out by the computer shader
 		Texture::Texture2D*            mBiNormalBuffer;
-
-		// Different configurations as to how the surface will be being modelled
-		std::vector<std::pair<std::string, FFTConfiguration>> mFFTConfigurations;
 
 		float mRunningTime;
 

@@ -71,10 +71,10 @@ vec2 CreateK(float n, float m, float resolution)
 // w(k) = [[w(k)/w0]] * w0
 float CreateDispersion(vec2 k)
 {
-	float magnitudeOfK = k.length();
+	float magnitudeOfK = sqrt(dot(k, k)); // This is the same as length(k)
 	float w            = sqrt(magnitudeOfK * gravity);
 
-	return floor(w / dispersionRelation_zero) * dispersionRelation_zero;
+	return float(floor(w / dispersionRelation_zero)) * dispersionRelation_zero;
 }
 
 // --------------------------------------------------------------------------------
@@ -83,16 +83,10 @@ void main()
 {
 	vec4 finalValue = vec4(0.0, 0.0, 0.0, 0.0);
 
-	// 0 -> 1 position for the point on the texture
+	// The pixel we are on the image
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
-
-	// Convert the texelcoord into mesh space, (+- half mesh dimensions)
-	ivec2 resolution = imageSize(positionOutput);
-
-	vec2  texelCoord           = vec2(pixelCoord) / float(resolution.x);
-
-	// To transpose a matrix you swap the indexes of the row and the column
-	ivec2 transposedTexelCoord = ivec2(pixelCoord.y, pixelCoord.x);
+	ivec2 resolution = imageSize(h0Input);
+	vec2  texelCoord = vec2(pixelCoord) / float(resolution.x);
 
 	// Determine the n and m positions in mesh space, 
 	// These are the 'x' and 'z' relative positions
@@ -107,17 +101,21 @@ void main()
 	float dispersionRelation = CreateDispersion(k);
 	
 	// Grab the H0 values we are going to be using
-	ComplexNumber h0Normal    = ComplexCast(imageLoad(h0Input, pixelCoord).xy);
-	ComplexNumber h0Transpose = ComplexCast(imageLoad(h0Input, transposedTexelCoord).xy); 
+	vec4 inputData = imageLoad(h0Input, pixelCoord);
+	ComplexNumber h0          = ComplexCast(inputData.xy);
+	ComplexNumber h0Transpose = ComplexCast(inputData.zw);  // We precalculated this in the h0 buffer section using -k instead of k
 
 	// Convert the exponential equations into sine and cosine using euler's equation
 	// e^^ix = cos(x) + isin(x)
-	ComplexNumber firstHalfFactor  = ComplexNumber(cos(dispersionRelation * time),        sin(dispersionRelation * time));
-	ComplexNumber secondHalfFactor = ComplexNumber(cos(dispersionRelation * time), -1.0 * sin(dispersionRelation * time));
+	float         internalFactor   = dispersionRelation * time;
+	float         sinValue         = sin(internalFactor);
+	float         cosValue         = cos(internalFactor);
+	ComplexNumber firstHalfFactor  = ComplexNumber(cosValue, sinValue);
+	ComplexNumber secondHalfFactor = ComplexNumber(cosValue, -sinValue);
 
 	// Calculate the final fourier domain value
-	// H0(k)e^^iw(k)t + h0transpose(-k)e^^-iw(k)t
-	ComplexNumber outputComplexNumber = AddComplex(MultiplyComplex(h0Normal, firstHalfFactor), MultiplyComplex(Conjugate(h0Transpose), secondHalfFactor));
+	// H0(k)e^^iw(k)t + h0Star(-k)e^^-iw(k)t
+	ComplexNumber outputComplexNumber = AddComplex(MultiplyComplex(h0, firstHalfFactor), MultiplyComplex(Conjugate(h0Transpose), secondHalfFactor));
 
 	// ---------------------------------------------------------- //
 

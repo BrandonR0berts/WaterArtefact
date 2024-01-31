@@ -10,8 +10,6 @@ layout(rgba32f, binding = 0) uniform writeonly image2D positionOutput;
 
 // --------------------------------------------------------------------------------
 
-uniform float time;
-
 uniform vec2  windVelocity;
 uniform float gravity;
 uniform float phillipsConstant;
@@ -20,8 +18,6 @@ uniform float phillipsConstant;
 
 const float oneOverRootTwo   = 1.0 / sqrt(2.0);
 const float PI               = 3.141529;
-
-const float fractionOfTime          = time - floor(time);
 
 // --------------------------------------------------------------------------------
 
@@ -105,12 +101,16 @@ void main()
 	// ---------------------------------------------------------- //
 
 	// Generate H0, which will then be passed into the final calculations as a starting point
-	ComplexNumber h0 = hZero(k, texelCoord);
+	ComplexNumber h0          = hZero(k, texelCoord);
+	ComplexNumber h0Transpose = hZero(-k, texelCoord); // Pre-calculate the transpose value here as we do it less often
 
 	// ---------------------------------------------------------- //
 
 	finalValue.x = h0.real;
 	finalValue.y = h0.complex;
+
+	finalValue.z = h0Transpose.real;
+	finalValue.w = h0Transpose.complex;
 
     imageStore(positionOutput, pixelCoord, finalValue);
 
