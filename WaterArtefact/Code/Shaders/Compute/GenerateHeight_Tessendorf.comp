@@ -62,8 +62,8 @@ ComplexNumber ComplexCast(vec2 inputValues)
 
 vec2 CreateK(float n, float m, float resolution)
 {
-	return vec2(2.0 * PI * n / resolution,
-	            2.0 * PI * m / resolution);
+	return vec2((2.0 * PI * n) / resolution,
+	            (2.0 * PI * m) / resolution);
 }
 
 // --------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ void main()
 	float dispersionRelation = CreateDispersion(k);
 	
 	// Grab the H0 values we are going to be using
-	vec4 inputData = imageLoad(h0Input, pixelCoord);
+	vec4          inputData   = imageLoad(h0Input, pixelCoord);
 	ComplexNumber h0          = ComplexCast(inputData.xy);
 	ComplexNumber h0Transpose = ComplexCast(inputData.zw);  // We precalculated this in the h0 buffer section using -k instead of k
 
@@ -110,7 +110,7 @@ void main()
 	float         internalFactor   = dispersionRelation * time;
 	float         sinValue         = sin(internalFactor);
 	float         cosValue         = cos(internalFactor);
-	ComplexNumber firstHalfFactor  = ComplexNumber(cosValue, sinValue);
+	ComplexNumber firstHalfFactor  = ComplexNumber(cosValue,  sinValue);
 	ComplexNumber secondHalfFactor = ComplexNumber(cosValue, -sinValue);
 
 	// Calculate the final fourier domain value
@@ -120,7 +120,7 @@ void main()
 	// ---------------------------------------------------------- //
 
 	finalValue.x = outputComplexNumber.real;
-	finalValue.y = outputComplexNumber.complex;	
+	finalValue.y = outputComplexNumber.complex;
 
 	// Output the final fourier domain value to the texture
     imageStore(positionOutput, pixelCoord, finalValue);
