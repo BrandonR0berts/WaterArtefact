@@ -4,8 +4,6 @@
 
 // This shader is for calculating the current frequency values in the fourier domain.
 // The output of this shader will go into the inverse FFT shader for the final height values
-
-
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
@@ -86,14 +84,16 @@ void main()
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 resolution = imageSize(h0Input);
 	
+	float floatResolution = float(resolution.x);
+
 	// The texel coord we are on (0 -> 1)
-	vec2  texelCoord = vec2(pixelCoord) / float(resolution.x);
+	vec2  texelCoord = vec2(pixelCoord) / floatResolution;
 
 	// Determine the n and m positions in mesh space, 
 	// These are the 'x' and 'z' relative positions
 	// These need to be calculated to make the centre of the output image essentially 0,0
-	float n = (texelCoord.x - 0.5) * resolution.x;
-	float m = (texelCoord.y - 0.5) * resolution.y;
+	float n = (texelCoord.x - 0.5) * floatResolution;
+	float m = (texelCoord.y - 0.5) * floatResolution;
 
 	// Wave vector 'k'
 	vec2 k = CreateK(n, m, LxLz);
@@ -104,7 +104,7 @@ void main()
 	// Grab the H0 values we are going to be using
 	vec4          inputData   = imageLoad(h0Input, pixelCoord);
 	ComplexNumber h0          = ComplexCast(inputData.xy);
-	ComplexNumber h0Transpose = ComplexCast(inputData.zw);  // We precalculated this in the h0 buffer section using -k instead of k
+	ComplexNumber h0Transpose = ComplexCast(imageLoad(h0Input, ivec2(pixelCoord.y, pixelCoord.x)).xy);
 
 	// Convert the exponential equations into sine and cosine using euler's equation
 	// e^^ix = cos(x) + isin(x)

@@ -105,17 +105,13 @@ void main()
 
 	// Generate H0, which will then be passed into the final calculations as a starting point
 	ComplexNumber h0          = hZero(k, mappedRandom);
-	ComplexNumber h0Transpose = hZero(-k, mappedRandom); // Pre-calculate the transpose value here as we do it less often
 
 	// ---------------------------------------------------------- //
 
-	vec4 outputValue;
+	vec4 outputValue = vec4(0.0, 0.0, 0.0, 0.0);
 
 	outputValue.x = h0.real;
 	outputValue.y = h0.complex;
-
-	outputValue.z = h0Transpose.real;
-	outputValue.w = h0Transpose.complex;
 
     imageStore(positionOutput, pixelCoord, outputValue);
 
