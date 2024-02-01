@@ -168,6 +168,9 @@
     <ClInclude Include="Code\Water.h">
       <Filter>Header Files\Water</Filter>
     </ClInclude>
+    <ClInclude Include="Code\WaterStructures.h">
+      <Filter>Header Files\Water</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Shaders\ShaderProgram.cpp">
@@ -272,6 +275,9 @@
       <Filter>Shaders\Compute\Tessendorf</Filter>
     </None>
     <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateHeight_Tessendorf.comp">
+      <Filter>Shaders\Compute\Tessendorf</Filter>
+    </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\BruteForceFFT.comp">
       <Filter>Shaders\Compute\Tessendorf</Filter>
     </None>
   </ItemGroup>

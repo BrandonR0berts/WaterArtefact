@@ -17,6 +17,7 @@
 #include "OpenGLRenderPipeline.h"
 
 #include <GLFW/glfw3.h>
+#include <random>
 
 namespace Rendering
 {
@@ -30,6 +31,7 @@ namespace Rendering
 		, mGenerateH0_ComputeShader(nullptr)
 		, mCreateFrequencyValues_ComputeShader(nullptr)
 		, mConvertToHeightValues_ComputeShader(nullptr)
+		, mBruteForceFFT(nullptr)
 
 		, mModellingApproach(SimulationMethods::Sine)
 
@@ -40,6 +42,7 @@ namespace Rendering
 		, mNormalBuffer(nullptr)
 		, mTangentBuffer(nullptr)
 		, mBiNormalBuffer(nullptr)
+		, mRandomNumberBuffer(nullptr)
 
 		, mRunningTime(0.0f)
 
@@ -59,7 +62,7 @@ namespace Rendering
 		, mDimensions(100)
 		, mDistanceBetweenVerticies(0.3)
 
-		, mTextureResolution(1024)
+		, mTextureResolution(1024) //64)
 
 		, mPhilipsConstant(0.2f)
 
@@ -74,7 +77,7 @@ namespace Rendering
 		, mElementCount(0)
 		, mRenderingData()
 
-		, debugStepDistance(2)
+		, mBruteForce(true)
 	{
 		// Compute and final render shaders
 		SetupShaders();
@@ -143,6 +146,9 @@ namespace Rendering
 
 		delete mFourierDomainValues;
 		mFourierDomainValues = nullptr;
+
+		delete mRandomNumberBuffer;
+		mRandomNumberBuffer = nullptr;
 
 		// --------------------------------------
 
@@ -293,6 +299,21 @@ namespace Rendering
 				mConvertToHeightValues_ComputeShader->LinkShadersToProgram();
 
 			mConvertToHeightValues_ComputeShader->DetachShader(computeShader);
+
+			delete computeShader;
+		}
+
+		if (!mBruteForceFFT)
+		{
+			mBruteForceFFT = new ShaderPrograms::ShaderProgram();
+
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/BruteForceFFT.comp");
+
+			mBruteForceFFT->AttachShader(computeShader);
+
+				mBruteForceFFT->LinkShadersToProgram();
+
+			mBruteForceFFT->DetachShader(computeShader);
 
 			delete computeShader;
 		}
@@ -463,6 +484,17 @@ namespace Rendering
 			mFourierDomainValues = new Texture::Texture2D();
 
 			mFourierDomainValues->InitEmpty(mTextureResolution, mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+		}
+
+		if (!mRandomNumberBuffer)
+		{
+			mRandomNumberBuffer = new Texture::Texture2D();
+
+			Maths::Vector::Vector3D<unsigned char>* randomNumberData = GenerateGaussianData();
+
+			mRandomNumberBuffer->InitWithData(mTextureResolution, mTextureResolution, (unsigned char*)randomNumberData, false);
+
+			delete[] randomNumberData;
 		}
 	}
 
@@ -712,16 +744,8 @@ namespace Rendering
 
 					mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
 				}
-
-				if (ImGui::InputInt("debug step", &debugStepDistance, 1, 1))
-				{
-					int maxCount = log2(mTextureResolution) * 2;
-
-					if (debugStepDistance < 0)
-						debugStepDistance = 0;
-					else if (debugStepDistance > maxCount)
-						debugStepDistance = maxCount;
-				}
+				
+				ImGui::Checkbox("Brute force the FFT", &mBruteForce);
 			}
 
 			ImGui::End();
@@ -802,26 +826,40 @@ namespace Rendering
 
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-				// Now convert to world space heights
-				// Determine how many passess are needed
-				unsigned int passCount = std::log2(mTextureResolution) * 2; // * 2 as this is a 2D texture, not a 1D set of data
-
-				for(unsigned int i = 0; i < debugStepDistance; i++)
+				if (mBruteForce)
 				{
-					glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-					
-					mConvertToHeightValues_ComputeShader->UseProgram();
+					mBruteForceFFT->UseProgram();
 
-						mFourierDomainValues   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-						mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-						mSecondPositionalBuffer->BindForComputeShader(2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+						mFourierDomainValues->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+						mPositionalBuffer   ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-						mConvertToHeightValues_ComputeShader->SetBool("finalStepOfProcessing", i == (passCount - 1));
-						mConvertToHeightValues_ComputeShader->SetInt("jumpDistance",           std::pow(2.0, i));
-						mConvertToHeightValues_ComputeShader->SetInt("passCount",              i);
+					glDispatchCompute(mTextureResolution, mTextureResolution, 1);
 
-					// Divide by 2 as each shader call stores 2 values
-					glDispatchCompute(mTextureResolution, mTextureResolution / 2, 1);
+					//mBruteForce = false;
+				}
+				else
+				{
+					// Now convert to world space heights
+					// Determine how many passess are needed
+					//unsigned int passCount = std::log2(mTextureResolution) * 2; // * 2 as this is a 2D texture, not a 1D set of data
+
+					//for(unsigned int i = 0; i < debugStepDistance; i++)
+					//{
+					//	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+					//
+					//	mConvertToHeightValues_ComputeShader->UseProgram();
+
+					//		mFourierDomainValues   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+					//		mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+					//		mSecondPositionalBuffer->BindForComputeShader(2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+					//		mConvertToHeightValues_ComputeShader->SetBool("finalStepOfProcessing", i == (passCount - 1));
+					//		mConvertToHeightValues_ComputeShader->SetInt("jumpDistance",           std::pow(2.0, i));
+					//		mConvertToHeightValues_ComputeShader->SetInt("passCount",              i);
+
+					//	// Divide by 2 as each shader call stores 2 values
+					//	glDispatchCompute(mTextureResolution, mTextureResolution / 2, 1);
+					//}
 				}
 			break;
 		}
@@ -854,9 +892,9 @@ namespace Rendering
 			// Textures
 
 			// If we are using the tessendorf approach, and the amount of passes required to fully finish the FFTs is odd, then the final data will be in the second buffer instead of the main one 
-			if(mModellingApproach == SimulationMethods::Tessendorf && (int)std::log2(mTextureResolution) % 2 == 1)
-				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mSecondPositionalBuffer->GetTextureID(), true);
-			else
+			//if(mModellingApproach == SimulationMethods::Tessendorf && (int)std::log2(mTextureResolution) % 2 == 1)
+			//	renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mSecondPositionalBuffer->GetTextureID(), true);
+			//else
 				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mPositionalBuffer->GetTextureID(), true);
 
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE1, mNormalBuffer->GetTextureID(),     true);
@@ -1101,4 +1139,54 @@ namespace Rendering
 	}
 
 	// ---------------------------------------------
+
+	Maths::Vector::Vector3D<unsigned char>* WaterSimulation::GenerateGaussianData()
+	{
+		unsigned int                            pixelsOnScreen = mTextureResolution * mTextureResolution;
+		Maths::Vector::Vector3D<unsigned char>* returnData     = new Maths::Vector::Vector3D<unsigned char>[pixelsOnScreen];
+
+		// Used for generating a properly random seed
+		std::random_device rd;
+
+		// This is the seed
+		std::mt19937 gen(rd());
+
+		// Set the mean to 0.5 and standard deviation to being 0.5, so most values will fall within the 0.0 -> 1.0 range
+		// the ones that dont will be capped to 0 and 1
+		std::normal_distribution<float> normalDistibution{0.5, 0.5};
+
+		unsigned char randomValue1, randomValue2;
+		unsigned int currentIndex = 0;
+
+		for (unsigned int y = 0; y < mTextureResolution; y++)
+		{
+			for (unsigned int x = 0; x < mTextureResolution; x++)
+			{
+				currentIndex = x + (y * mTextureResolution);
+
+				// Generate the two random numbers for this pixel
+				randomValue1 = ConvertToUnsignedChar(normalDistibution(gen));
+				randomValue2 = ConvertToUnsignedChar(normalDistibution(gen));
+
+				returnData[currentIndex] = Maths::Vector::Vector3D<unsigned char>(randomValue1, randomValue2, 0);
+			}
+		}
+
+		return returnData;
+	}
+
+	// ---------------------------------------------
+
+	unsigned char WaterSimulation::ConvertToUnsignedChar(float value)
+	{
+		// Cap the value to being 0 -> 1
+		value = std::min<float>(1.0, value);
+		value = std::max<float>(0.0, value);
+
+		// Now multiply by 255
+		return unsigned char(value * 255.0f);
+	}
+
+	// ---------------------------------------------
+
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Maths/Code/Vector.h"
+#include "Rendering/Code/WaterStructures.h"
 
 #include <vector>
 #include <string>
@@ -28,128 +29,7 @@ namespace Rendering
 
 	class Camera;
 
-	// ---------------------------------------
-
-	struct SingleSineDataSet final
-	{
-		SingleSineDataSet()
-			: mAmplitude(0.1f)
-			, mSteepnessFactor(1.0f)
-			, mWaveLength(9.0f)
-			, mSpeedOfWave(10.0f)
-			, mDirectionOfWave(1.0f, 0.0f)
-			, padding1(0.0f)
-			, padding2(0.0f)
-		{
-
-		}
-
-		SingleSineDataSet(float amplitude, Maths::Vector::Vector2D<float> direction, float speed, float wavelength)
-			: mAmplitude(amplitude)
-			, mSteepnessFactor(1.0f)
-			, mWaveLength(wavelength)
-			, mSpeedOfWave(speed)
-			, mDirectionOfWave(direction)
-			, padding1(0.0f)
-			, padding2(0.0f)
-		{
-
-		}
-
-		float                          mAmplitude;
-		float                          mSteepnessFactor;
-		float                          mWaveLength;
-		float                          mSpeedOfWave;
-		Maths::Vector::Vector2D<float> mDirectionOfWave;
-		float                          padding1;
-		float                          padding2;
-	};
-
-	struct SingleGerstnerWaveData final
-	{
-		SingleGerstnerWaveData()
-			: mAmplitude(0.3f)
-			, mSteepness(0.3f)
-			, mSpeedOfWave(6.0f)
-			, mWaveLength(20.0f)
-			, mDirectionOfWave(0.5f, 0.1f)
-			, mPadding()
-		{
-
-		}
-
-		SingleGerstnerWaveData(float amplitude, Maths::Vector::Vector2D<float> direction, float speed, float wavelength, float steepness)
-			: mAmplitude(amplitude)
-			, mSteepness(steepness)
-			, mSpeedOfWave(speed)
-			, mWaveLength(wavelength)
-			, mDirectionOfWave(direction)
-			, mPadding()
-		{
-		}
-
-		float                          mAmplitude;
-		float                          mSteepness;
-		float                          mSpeedOfWave;
-		float                          mWaveLength;
-		Maths::Vector::Vector2D<float> mDirectionOfWave;
-		Maths::Vector::Vector2D<float> mPadding;
-	};
-
-	struct TessendorfWaveData final
-	{
-		TessendorfWaveData()
-			: mWindVelocity(15.0f, 0.1f)
-			, mGravity(9.81f)
-			, mRepeatAfterTime(10.0f)
-		{
-
-		}
-
-		Maths::Vector::Vector2D<float> mWindVelocity;
-		float                          mGravity;
-		float                          mRepeatAfterTime;
-	};
-
-	struct RenderingWaterData
-	{
-		RenderingWaterData()
-			: mWaterColour(0.2431f, 0.337f, 0.7176f)
-			, mAmbientColour(0.1f, 0.1f, 0.2f)
-			, mLightDirection(0.1f, -1.0f, 0.1f)
-			, mReflectionFactor(1.0f)
-		{
-			mLightDirection.Normalise();
-		}
-
-		Maths::Vector::Vector3D<float> mWaterColour;
-		Maths::Vector::Vector3D<float> mAmbientColour;
-		Maths::Vector::Vector3D<float> mLightDirection;
-		float                          mReflectionFactor;
-	};
-
-	// ---------------------------------------
-
-	enum class SimulationMethods 
-	{
-		Sine,
-		Gerstner,
-		Tessendorf
-	};
-
-	enum class SineWavePresets : char
-	{
-		Calm,
-		Chopppy,
-		Strange
-	};
-
-	enum class GerstnerWavePresets : char
-	{
-		Calm,
-		Chopppy,
-		Strange
-	};
+	// ---------------------------------------	
 
 	class WaterSimulation final
 	{
@@ -157,25 +37,24 @@ namespace Rendering
 		WaterSimulation();
 		~WaterSimulation();
 
-		void RenderDebugMenu();
+		void               RenderDebugMenu();
 
-		void Update(const float deltaTime);
-		void Render(Rendering::Camera* camera, Texture::CubeMapTexture* skybox);
+		void                Update(const float deltaTime);
+		void                Render(Rendering::Camera* camera, Texture::CubeMapTexture* skybox);
 
-		bool IsBelowSurface(Maths::Vector::Vector3D<float> position);
+		bool                IsBelowSurface(Maths::Vector::Vector3D<float> position);
 
-		Texture::Texture2D* GetPositionalBuffer()  { return mPositionalBuffer; }
-		Texture::Texture2D* GetPositionalBuffer2() { return mSecondPositionalBuffer; }
-		Texture::Texture2D* GetNormalBuffer()      { return mNormalBuffer;     }
-		Texture::Texture2D* GetTangentBuffer()     { return mTangentBuffer;    }
-		Texture::Texture2D* GetBinormalBuffer()    { return mBiNormalBuffer;   }
+		Texture::Texture2D* GetPositionalBuffer()   { return mPositionalBuffer; }
+		Texture::Texture2D* GetPositionalBuffer2()  { return mSecondPositionalBuffer; }
+		Texture::Texture2D* GetNormalBuffer()       { return mNormalBuffer;     }
+		Texture::Texture2D* GetTangentBuffer()      { return mTangentBuffer;    }
+		Texture::Texture2D* GetBinormalBuffer()     { return mBiNormalBuffer;   }
+		Texture::Texture2D* GetRandomNumberBuffer() { return mRandomNumberBuffer; }
 
 		Texture::Texture2D* GetH0Buffer()                  { return mH0Buffer; }
 		Texture::Texture2D* GetFourierDomainValuesBuffer() { return mFourierDomainValues; }
 
-		void SetPreset(SimulationMethods approach, char preset);
-
-		int debugStepDistance;
+		void                SetPreset(SimulationMethods approach, char preset);
 
 	private:
 		void PerformanceTesting();
@@ -189,8 +68,11 @@ namespace Rendering
 		void UpdateSineWaveDataSet();
 		void UpdateGerstnerWaveDataSet();
 
-		Maths::Vector::Vector2D<float>* GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex);
-		unsigned int* GenerateElementData(unsigned int dimensions);
+		Maths::Vector::Vector2D<float>*         GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex);
+		unsigned int*                           GenerateElementData(unsigned int dimensions);
+		Maths::Vector::Vector3D<unsigned char>* GenerateGaussianData();
+
+		unsigned char ConvertToUnsignedChar(float value);
 
 		// --------------------- Modelling surface --------------------- //
 		// Buffer holding the verticies of the water's surface
@@ -204,8 +86,9 @@ namespace Rendering
 		ShaderPrograms::ShaderProgram* mGenerateH0_ComputeShader;
 		ShaderPrograms::ShaderProgram* mCreateFrequencyValues_ComputeShader;
 		ShaderPrograms::ShaderProgram* mConvertToHeightValues_ComputeShader;
+		ShaderPrograms::ShaderProgram* mBruteForceFFT;
 
-		SimulationMethods mModellingApproach;
+		SimulationMethods              mModellingApproach;
 
 		// Buffer that holds the world space X-Y-Z 
 		Texture::Texture2D*            mPositionalBuffer;
@@ -222,6 +105,9 @@ namespace Rendering
 
 		// Buffer that holds the BiNormal of the point given out by the computer shader
 		Texture::Texture2D*            mBiNormalBuffer;
+
+		// Buffer holding gaussian random numbers for H0 generation
+		Texture::Texture2D*            mRandomNumberBuffer;
 
 		float mRunningTime;
 
@@ -264,6 +150,8 @@ namespace Rendering
 		// If the simuation is being updated
 		bool                           mSimulationPaused;
 		bool                           mWireframe;
+
+		bool                           mBruteForce;
 	};
 
 	// ---------------------------------------

@@ -39,7 +39,8 @@ namespace Rendering
 		H0,
 		Fourier,
 		Depth,
-		Position2
+		Position2,
+		RandomNumbers
 	};
 
 	// -----------------------------------------

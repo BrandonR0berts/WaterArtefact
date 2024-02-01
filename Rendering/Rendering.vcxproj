@@ -58,6 +58,7 @@
     <ClInclude Include="Code\TextureSettings.h" />
     <ClInclude Include="Code\Textures\Texture.h" />
     <ClInclude Include="Code\Water.h" />
+    <ClInclude Include="Code\WaterStructures.h" />
     <ClInclude Include="Code\Window.h" />
   </ItemGroup>
   <ItemGroup>
@@ -90,6 +91,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\BruteForceFFT.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Compute\ConvertFrequencyToWorldHeight.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateH0_Tessendorf.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateHeight_Tessendorf.comp" />
@@ -144,13 +146,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

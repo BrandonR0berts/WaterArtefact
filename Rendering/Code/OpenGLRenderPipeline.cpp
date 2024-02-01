@@ -391,6 +391,11 @@ namespace Rendering
 				mDebugVisualisationOverride = BufferViewOverrideTypes::Position2;
 			}
 
+			if (ImGui::Button("Random numbers"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::RandomNumbers;
+			}
+
 			if (ImGui::Button("Depth"))
 			{
 				mDebugVisualisationOverride = BufferViewOverrideTypes::Depth;
@@ -471,6 +476,10 @@ namespace Rendering
 
 		case BufferViewOverrideTypes::Position2:
 			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetPositionalBuffer2()->GetTextureID());
+		break;
+
+		case BufferViewOverrideTypes::RandomNumbers:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetRandomNumberBuffer()->GetTextureID());
 		break;
 		}
 
