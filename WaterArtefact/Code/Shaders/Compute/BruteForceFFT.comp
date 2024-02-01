@@ -11,6 +11,8 @@ layout(rgba32f, binding = 1) uniform writeonly image2D worldPositionOutput;   //
 
 // --------------------------------------------------------------------------------
 
+uniform vec2 LxLz;
+
 // Useful functionality
 struct ComplexNumber
 {
@@ -48,10 +50,10 @@ const float PI = 3.141529;
 
 // --------------------------------------------------------------------------------
 
-vec2 CreateK(float n, float m, float resolution)
+vec2 CreateK(float n, float m, vec2 lxlz)
 {
-	return vec2((2.0 * PI * n) / resolution,
-	            (2.0 * PI * m) / resolution);
+	return vec2((2.0 * PI * n) / lxlz.x,
+	            (2.0 * PI * m) / lxlz.y);
 }
 
 // --------------------------------------------------------------------------------
@@ -74,8 +76,22 @@ void main()
 	result.real    = 0.0;
 	result.complex = 0.0;
 
+	// ----------------------------
+
+	// Calculate the X vector
+	// First calculate where we are on the mesh
 	vec2 xVector = vec2((texelCoord.x - 0.5) * floatResolution, 
 					    (texelCoord.y - 0.5) * floatResolution);
+
+	// Now multiply by LxLz
+//	xVector.x *= LxLz.x;
+//	xVector.x *= LxLz.y;
+//
+//	// Now divide by the amount of points
+//	xVector.x /= floatResolution;
+//	xVector.y /= floatResolution;
+
+	// ----------------------------
 
 	// Go through every pixel on the screen, perform the FFT equation to it and sum them
 	for(int z = 0; z < resolution.y; z++)
@@ -92,10 +108,10 @@ void main()
 			// exp(ik dot x) = cos(k dot x) + isin(k dot x)
 
 			// Calculate k
-			float n = ((float(z) / floatResolution) - 0.5) * floatResolution;
-			float m = ((float(x) / floatResolution) - 0.5) * floatResolution;
+			float n = ((float(x) / floatResolution) - 0.5) * floatResolution;
+			float m = ((float(z) / floatResolution) - 0.5) * floatResolution;
 
-			vec2 k = CreateK(n, m, floatResolution);
+			vec2 k = CreateK(n, m, LxLz);
 
 			float kDotX = dot(xVector, k);
 

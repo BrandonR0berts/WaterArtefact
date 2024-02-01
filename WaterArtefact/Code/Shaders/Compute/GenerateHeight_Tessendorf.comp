@@ -6,7 +6,7 @@
 // The output of this shader will go into the inverse FFT shader for the final height values
 
 
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
@@ -23,6 +23,7 @@ uniform float time;
 
 uniform float repeatAfterTime;
 uniform float gravity;
+uniform vec2 LxLz;
 
 // --------------------------------------------------------------------------------
 
@@ -60,10 +61,10 @@ ComplexNumber ComplexCast(vec2 inputValues)
 
 // --------------------------------------------------------------------------------
 
-vec2 CreateK(float n, float m, float resolution)
+vec2 CreateK(float n, float m, vec2 lxlz)
 {
-	return vec2((2.0 * PI * n) / resolution,
-	            (2.0 * PI * m) / resolution);
+	return vec2((2.0 * PI * n) / lxlz.x,
+	            (2.0 * PI * m) / lxlz.y);
 }
 
 // --------------------------------------------------------------------------------
@@ -81,11 +82,11 @@ float CreateDispersion(vec2 k)
 
 void main()
 {
-	vec4 finalValue = vec4(0.0, 0.0, 0.0, 0.0);
-
-	// The pixel we are on the image
+	// The pixel we are on the image (0 -> 1024 for example)
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 resolution = imageSize(h0Input);
+	
+	// The texel coord we are on (0 -> 1)
 	vec2  texelCoord = vec2(pixelCoord) / float(resolution.x);
 
 	// Determine the n and m positions in mesh space, 
@@ -95,7 +96,7 @@ void main()
 	float m = (texelCoord.y - 0.5) * resolution.y;
 
 	// Wave vector 'k'
-	vec2 k = CreateK(n, m, float(resolution));
+	vec2 k = CreateK(n, m, LxLz);
 
 	// Dispersion relation factor
 	float dispersionRelation = CreateDispersion(k);
@@ -118,6 +119,8 @@ void main()
 	ComplexNumber outputComplexNumber = AddComplex(MultiplyComplex(h0, firstHalfFactor), MultiplyComplex(Conjugate(h0Transpose), secondHalfFactor));
 
 	// ---------------------------------------------------------- //
+
+	vec4 finalValue = vec4(0.0, 0.0, 0.0, 0.0);
 
 	finalValue.x = outputComplexNumber.real;
 	finalValue.y = outputComplexNumber.complex;

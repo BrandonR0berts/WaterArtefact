@@ -9,7 +9,7 @@
 
 // For an explanation as to how FFTs work see here: https://www.cs.cmu.edu/afs/andrew/scs/cs/15-463/99/pub/www/notes/fourier/fourier.pdf
 
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 

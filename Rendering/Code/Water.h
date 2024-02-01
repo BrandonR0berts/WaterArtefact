@@ -154,6 +154,8 @@ namespace Rendering
 		bool                           mBruteForce;
 
 		Maths::Vector::Vector2D<float> mLxLz;
+
+		const unsigned int kComputeShaderThreadClusterSize;
 	};
 
 	// ---------------------------------------

@@ -62,7 +62,7 @@ namespace Rendering
 		, mDimensions(100)
 		, mDistanceBetweenVerticies(0.3)
 
-		, mTextureResolution(1024) //64)
+		, mTextureResolution(1024) // 1024
 
 		, mPhilipsConstant(0.2f)
 
@@ -78,7 +78,9 @@ namespace Rendering
 		, mRenderingData()
 
 		, mBruteForce(true)
-		, mLxLz(1024.0f, 1024.0f)
+		, mLxLz(1024.0f, 1024.0f) // 1024
+
+		, kComputeShaderThreadClusterSize(32)
 	{
 		// Compute and final render shaders
 		SetupShaders();
@@ -178,7 +180,7 @@ namespace Rendering
 			mGenerateH0_ComputeShader->SetFloat("phillipsConstant", mPhilipsConstant);
 			mGenerateH0_ComputeShader->SetVec2("LxLz",              mLxLz);
 
-			glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 	}
 
 	// ---------------------------------------------
@@ -788,7 +790,7 @@ namespace Rendering
 				mTangentBuffer   ->BindForComputeShader(2, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 				mBiNormalBuffer  ->BindForComputeShader(3, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+				glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 			break;
 
 			case SimulationMethods::Gerstner:
@@ -808,7 +810,7 @@ namespace Rendering
 				mTangentBuffer   ->BindForComputeShader(2, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 				mBiNormalBuffer  ->BindForComputeShader(3, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+				glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 
 			break;
 
@@ -822,6 +824,7 @@ namespace Rendering
 					mCreateFrequencyValues_ComputeShader->SetFloat("time",            mRunningTime);
 					mCreateFrequencyValues_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
 					mCreateFrequencyValues_ComputeShader->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
+					mCreateFrequencyValues_ComputeShader->SetVec2("LxLz",             mLxLz);
 
 					mFourierDomainValues->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); // Output fourier domain values
 					mNormalBuffer       ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); // Normals
@@ -830,20 +833,21 @@ namespace Rendering
 					 
 					mH0Buffer           ->BindForComputeShader(4, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);  // H0 values created at startup
 
-				glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+				glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 				if (mBruteForce)
 				{
-					/*mBruteForceFFT->UseProgram();
+					mBruteForceFFT->UseProgram();
+					    mBruteForceFFT->SetVec2("LxLz", mLxLz);
 
 						mFourierDomainValues->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 						mPositionalBuffer   ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-					glDispatchCompute(mTextureResolution, mTextureResolution, 1);*/
+					glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 
-					//mBruteForce = false;
+					mBruteForce = false;
 				}
 				else
 				{
@@ -866,7 +870,7 @@ namespace Rendering
 					//		mConvertToHeightValues_ComputeShader->SetInt("passCount",              i);
 
 					//	// Divide by 2 as each shader call stores 2 values
-					//	glDispatchCompute(mTextureResolution, mTextureResolution / 2, 1);
+					//	glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / 2 * kComputeShaderThreadClusterSize, 1);
 					//}
 				}
 			break;
