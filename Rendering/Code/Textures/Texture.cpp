@@ -171,13 +171,16 @@ namespace Rendering
 
 		// ----------------------------------------------------------------------------------------------------------
 
-		bool Texture2D::InitWithData(unsigned int width, unsigned int height, unsigned char* data, bool hasAlpha, TextureMinMagFilters minMagFilters, TextureWrappingSettings textureWrapSettings)
+		bool Texture2D::InitWithData(unsigned int width, unsigned int height, void* data, bool hasAlpha, GLenum internalDataType, GLenum internalFormat, GLenum format, TextureMinMagFilters minMagFilters, TextureWrappingSettings textureWrapSettings)
 		{
-			mLastDataInvalid = true;
+			mLastDataInvalid  = true;
 
-			mWidth    = width;
-			mHeight   = height;
-			mHasAlpha = hasAlpha;
+			mWidth            = width;
+			mHeight           = height;
+			mHasAlpha         = hasAlpha;
+			mInternalDataType = internalDataType;
+			mInternalFormat   = internalFormat;
+			mExternalFormat   = format;
 
 			Bind();
 
@@ -189,9 +192,6 @@ namespace Rendering
 #ifdef _DEBUG_BUILD
 					Rendering::TrackingData::AdjustGPUMemoryUsed(width * height * 4);
 #endif
-					mInternalFormat = GL_RGBA;
-					mExternalFormat = mInternalFormat;
-
 					glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mExternalFormat, mInternalDataType, (const void*)data);
 				}
 				else
@@ -199,9 +199,6 @@ namespace Rendering
 #ifdef _DEBUG_BUILD
 					Rendering::TrackingData::AdjustGPUMemoryUsed(width * height * 3);
 #endif
-					mInternalFormat = GL_RGB;
-					mExternalFormat = mInternalFormat;
-
 					glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mExternalFormat, mInternalDataType, (const void*)data);
 				}
 

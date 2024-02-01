@@ -78,6 +78,7 @@ namespace Rendering
 		, mRenderingData()
 
 		, mBruteForce(true)
+		, mLxLz(1024.0f, 1024.0f)
 	{
 		// Compute and final render shaders
 		SetupShaders();
@@ -165,15 +166,17 @@ namespace Rendering
 
 	void WaterSimulation::GenerateH0()
 	{
-		if (!mH0Buffer || !mGenerateH0_ComputeShader)
+		if (!mH0Buffer || !mGenerateH0_ComputeShader || !mRandomNumberBuffer)
 			return;
 
 		mGenerateH0_ComputeShader->UseProgram();
-			mH0Buffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+			mH0Buffer          ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+			mRandomNumberBuffer->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
 			mGenerateH0_ComputeShader->SetFloat("gravity",          mTessendorfData.mGravity);
 			mGenerateH0_ComputeShader->SetVec2("windVelocity",      mTessendorfData.mWindVelocity);
 			mGenerateH0_ComputeShader->SetFloat("phillipsConstant", mPhilipsConstant);
+			mGenerateH0_ComputeShader->SetVec2("LxLz",              mLxLz);
 
 			glDispatchCompute(mTextureResolution, mTextureResolution, 1);
 	}
@@ -490,9 +493,9 @@ namespace Rendering
 		{
 			mRandomNumberBuffer = new Texture::Texture2D();
 
-			Maths::Vector::Vector3D<unsigned char>* randomNumberData = GenerateGaussianData();
+			Maths::Vector::Vector4D<float>* randomNumberData = GenerateGaussianData();
 
-			mRandomNumberBuffer->InitWithData(mTextureResolution, mTextureResolution, (unsigned char*)randomNumberData, false);
+			mRandomNumberBuffer->InitWithData(mTextureResolution, mTextureResolution, randomNumberData, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
 
 			delete[] randomNumberData;
 		}
@@ -746,6 +749,11 @@ namespace Rendering
 				}
 				
 				ImGui::Checkbox("Brute force the FFT", &mBruteForce);
+
+				if (ImGui::InputFloat2("LxLz", &mLxLz.x))
+				{
+					GenerateH0();
+				}
 			}
 
 			ImGui::End();
@@ -828,12 +836,12 @@ namespace Rendering
 
 				if (mBruteForce)
 				{
-					mBruteForceFFT->UseProgram();
+					/*mBruteForceFFT->UseProgram();
 
 						mFourierDomainValues->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 						mPositionalBuffer   ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-					glDispatchCompute(mTextureResolution, mTextureResolution, 1);
+					glDispatchCompute(mTextureResolution, mTextureResolution, 1);*/
 
 					//mBruteForce = false;
 				}
@@ -1140,10 +1148,10 @@ namespace Rendering
 
 	// ---------------------------------------------
 
-	Maths::Vector::Vector3D<unsigned char>* WaterSimulation::GenerateGaussianData()
+	Maths::Vector::Vector4D<float>* WaterSimulation::GenerateGaussianData()
 	{
-		unsigned int                            pixelsOnScreen = mTextureResolution * mTextureResolution;
-		Maths::Vector::Vector3D<unsigned char>* returnData     = new Maths::Vector::Vector3D<unsigned char>[pixelsOnScreen];
+		unsigned int                    pixelsOnScreen = mTextureResolution * mTextureResolution;
+		Maths::Vector::Vector4D<float>* returnData     = new Maths::Vector::Vector4D<float>[pixelsOnScreen];
 
 		// Used for generating a properly random seed
 		std::random_device rd;
@@ -1155,7 +1163,7 @@ namespace Rendering
 		// the ones that dont will be capped to 0 and 1
 		std::normal_distribution<float> normalDistibution{0.5, 0.5};
 
-		unsigned char randomValue1, randomValue2;
+		float randomValue1, randomValue2;
 		unsigned int currentIndex = 0;
 
 		for (unsigned int y = 0; y < mTextureResolution; y++)
@@ -1165,10 +1173,10 @@ namespace Rendering
 				currentIndex = x + (y * mTextureResolution);
 
 				// Generate the two random numbers for this pixel
-				randomValue1 = ConvertToUnsignedChar(normalDistibution(gen));
-				randomValue2 = ConvertToUnsignedChar(normalDistibution(gen));
+				randomValue1 = normalDistibution(gen);
+				randomValue2 = normalDistibution(gen);
 
-				returnData[currentIndex] = Maths::Vector::Vector3D<unsigned char>(randomValue1, randomValue2, 0);
+				returnData[currentIndex] = Maths::Vector::Vector4D<float>(randomValue1, randomValue2, 0.0f, 0.0f);
 			}
 		}
 

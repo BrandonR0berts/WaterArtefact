@@ -6,13 +6,19 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
+// Final value output buffer
 layout(rgba32f, binding = 0) uniform writeonly image2D positionOutput;
+
+// Input buffer of random numbers
+layout(rgba32f, binding = 1) uniform readonly image2D  randomNumbers;
 
 // --------------------------------------------------------------------------------
 
 uniform vec2  windVelocity;
 uniform float gravity;
 uniform float phillipsConstant;
+
+uniform vec2 LxLz;
 
 // --------------------------------------------------------------------------------
 
@@ -34,85 +40,84 @@ ComplexNumber MultiplyComplex(ComplexNumber num1, float multiplier)
 
 // --------------------------------------------------------------------------------
 
-// The noise functions are depricated within this version of glsl, so they just return 0
-// So instead this is a custom random number generator
-float RandomNumber(vec2 seed)
-{
-	return fract(sin(dot(seed.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
-// --------------------------------------------------------------------------------
-
 float PhillipsSpectrum(vec2 k)
 {
 	float kSquared        = dot(k, k);
 	float kToTheFour      = kSquared * kSquared;
 
-	float windSpeed       = length(windVelocity);
-	vec2  windDirection   = vec2(0.0, 0.0);
-
-	if(windSpeed > 0.0)
-		windDirection = windVelocity / windSpeed;
+	float windSpeed       = sqrt(dot(windVelocity, windVelocity));
+	vec2  windDirection   = normalize(windVelocity);
 
 	float L               = (windSpeed * windSpeed) / gravity;
 
-	return phillipsConstant * ((exp(-1.0 / (kSquared * L * L))) / kToTheFour) * abs(dot(normalize(k), windDirection));
+	float exponentialFactor = (exp(-1.0 / (kSquared * L * L))) / kToTheFour;
+	return phillipsConstant * exponentialFactor * abs(dot(normalize(k), windDirection));
 }
 
 // --------------------------------------------------------------------------------
 
 // Fourier amplitudes of a wave height field
-ComplexNumber hZero(vec2 k, vec2 randomNumberSeed)
+ComplexNumber hZero(vec2 k, vec2 randomNumber)
 {
 	float multiplier = oneOverRootTwo * sqrt(PhillipsSpectrum(k));
 
-	return MultiplyComplex(ComplexNumber(RandomNumber(randomNumberSeed), RandomNumber(randomNumberSeed + vec2(1.1, 1.15))), multiplier);
+	return MultiplyComplex(ComplexNumber(randomNumber.x, randomNumber.y), multiplier);
 }
 
 // --------------------------------------------------------------------------------
 
 // This may need to be divided by real world distance between points not the whole space?
 // If at larger LODs the scaling is not right then this is likely the issue
-vec2 CreateK(float n, float m, float resolution)
+vec2 CreateK(float n, float m, vec2 Lxz)
 {
-	return vec2((2.0 * PI * n) / resolution,
-	            (2.0 * PI * m) / resolution);
+	return vec2((2.0 * PI * n) / Lxz.x,
+	            (2.0 * PI * m) / Lxz.y);
 }
 
 // --------------------------------------------------------------------------------
 
 void main()
 {
-	vec4  finalValue = vec4(0.0, 0.0, 0.0, 0.0);
+	// The pixel we are on the image
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 	vec2  resolution = imageSize(positionOutput);
 
+	// The texel we are on the image (0 -> 1 instead of 0 -> 1024 for example)
 	vec2 texelCoord = vec2(pixelCoord) / resolution;
+
+	// Grab the random numbers from the input image - they are only stored in the XY portions of the image
+	vec2 inputRandom = imageLoad(randomNumbers, pixelCoord).xy;
+
+	// Now convert the random number to being in the right range - at the moment they are from 0 -> 1
+	// We need to convert them to being in the -1 -> 1 range
+	vec2 mappedRandom = (inputRandom * 2.0) - 1.0;
 
 	// Determine the n and m positions in mesh space, 
 	// These are the 'x' and 'z' relative positions
 	// These need to be calculated to make the centre of the output image essentially 0,0
-	float n = (texelCoord.y - 0.5) * resolution.x;
-	float m = (texelCoord.x - 0.5) * resolution.y;
+	float n = (texelCoord.x - 0.5) * resolution.x;
+	float m = (texelCoord.y - 0.5) * resolution.y;
 
 	// Now determine the wave vector 'k'
-	vec2 k = CreateK(n, m, resolution.x);
+	vec2 k = CreateK(n, m, LxLz);
 
 	// ---------------------------------------------------------- //
 
 	// Generate H0, which will then be passed into the final calculations as a starting point
-	ComplexNumber h0          = hZero(k, texelCoord);
-	ComplexNumber h0Transpose = hZero(-k, texelCoord); // Pre-calculate the transpose value here as we do it less often
+	ComplexNumber h0          = hZero(k, mappedRandom);
+	ComplexNumber h0Transpose = hZero(-k, mappedRandom); // Pre-calculate the transpose value here as we do it less often
 
 	// ---------------------------------------------------------- //
 
-	finalValue.x = h0.real;
-	finalValue.y = h0.complex;
+	vec4 outputValue;
 
-	finalValue.z = h0Transpose.real;
-	finalValue.w = h0Transpose.complex;
+	outputValue.x = h0.real;
+	outputValue.y = h0.complex;
 
-    imageStore(positionOutput, pixelCoord, finalValue);
+	outputValue.z = h0Transpose.real;
+	outputValue.w = h0Transpose.complex;
+
+    imageStore(positionOutput, pixelCoord, outputValue);
 
 	// ---------------------------------------------------------- //
 }

@@ -70,7 +70,7 @@ namespace Rendering
 
 		Maths::Vector::Vector2D<float>*         GenerateVertexData(unsigned int dimensions, float distanceBetweenVertex);
 		unsigned int*                           GenerateElementData(unsigned int dimensions);
-		Maths::Vector::Vector3D<unsigned char>* GenerateGaussianData();
+		Maths::Vector::Vector4D<float>*         GenerateGaussianData();
 
 		unsigned char ConvertToUnsignedChar(float value);
 
@@ -152,6 +152,8 @@ namespace Rendering
 		bool                           mWireframe;
 
 		bool                           mBruteForce;
+
+		Maths::Vector::Vector2D<float> mLxLz;
 	};
 
 	// ---------------------------------------

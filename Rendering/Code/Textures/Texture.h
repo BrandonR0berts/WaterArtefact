@@ -60,8 +60,11 @@ namespace Rendering
 
 			bool InitWithData(unsigned int            width, 
 							  unsigned int            height, 
-							  unsigned char*          data, 
+							  void*                   data, 
 							  bool                    hasAlpha, 
+							  GLenum                  internalDataType,
+							  GLenum                  internalFormat,
+						      GLenum                  format,
 							  TextureMinMagFilters    minMagFilters = TextureMinMagFilters(),
 							  TextureWrappingSettings textureWrapSettings = TextureWrappingSettings());
 
