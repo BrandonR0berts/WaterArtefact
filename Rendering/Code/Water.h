@@ -102,10 +102,11 @@ namespace Rendering
 		ShaderPrograms::ShaderProgram* mConvertToHeightValues_ComputeShader_FFT;  // Converts from H(k, t) to a height map
 
 		ShaderPrograms::ShaderProgram* mGenerateButterflyFFTData;
+		ShaderPrograms::ShaderProgram* mFFTFinalStageProgram;
 
 		// Buffer that holds the world space X-Y-Z 
 		Texture::Texture2D*            mPositionalBuffer;
-		Texture::Texture2D*            mSecondPositionalBuffer; // Needed for the tessendorf FFT generation
+		Texture::Texture2D*            mSecondPositionalBuffer; // Needed for the tessendorf FFT generation process
 
 		// Buffer that holds the normal of the point given out by the computer shader
 		Texture::Texture2D*            mNormalBuffer;

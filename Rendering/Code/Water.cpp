@@ -35,6 +35,7 @@ namespace Rendering
 		, mGenerateH0_ComputeShader(nullptr)
 		, mCreateFrequencyValues_ComputeShader(nullptr)
 		, mConvertToHeightValues_ComputeShader_FFT(nullptr)
+		, mFFTFinalStageProgram(nullptr)
 
 		, mPositionalBuffer(nullptr)
 		, mSecondPositionalBuffer(nullptr)
@@ -118,6 +119,9 @@ namespace Rendering
 
 		delete mConvertToHeightValues_ComputeShader_FFT;
 		mConvertToHeightValues_ComputeShader_FFT = nullptr;
+
+		delete mFFTFinalStageProgram;
+		mFFTFinalStageProgram = nullptr;
 
 		// --------------------------------------
 
@@ -316,6 +320,21 @@ namespace Rendering
 				mGenerateButterflyFFTData->LinkShadersToProgram();
 
 			mGenerateButterflyFFTData->DetachShader(computeShader);
+
+			delete computeShader;
+		}
+
+		if (!mFFTFinalStageProgram)
+		{
+			mFFTFinalStageProgram = new ShaderPrograms::ShaderProgram();
+
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/InvertAndScaleFFTResult.comp");
+
+			mFFTFinalStageProgram->AttachShader(computeShader);
+
+				mFFTFinalStageProgram->LinkShadersToProgram();
+
+			mFFTFinalStageProgram->DetachShader(computeShader);
 
 			delete computeShader;
 		}
@@ -879,14 +898,19 @@ namespace Rendering
 
 		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", true);
 
+		int runningPassCount = 0;
+
 		// Horizontal passes
 		for (unsigned int i = 0; i < passCount; i++)
 		{
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 			mConvertToHeightValues_ComputeShader_FFT->SetInt("passCount", i);
+			mConvertToHeightValues_ComputeShader_FFT->SetBool("storeDataInOutput1", !(runningPassCount % 2));
 
 			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
+
+			runningPassCount++;
 		}
 
 		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", false);
@@ -897,9 +921,21 @@ namespace Rendering
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 			mConvertToHeightValues_ComputeShader_FFT->SetInt("passCount", i);
+			mConvertToHeightValues_ComputeShader_FFT->SetBool("storeDataInOutput1", !(runningPassCount % 2));
 
 			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
+
+			runningPassCount++;
 		}
+
+		// Now apply the correct scale factor and positive/negative multipliers
+		mFFTFinalStageProgram->UseProgram();
+			mFFTFinalStageProgram->SetBool("readFromPositionBuffer1", (runningPassCount % 2));
+
+			mSecondPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+			mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 	}
 
 	// ---------------------------------------------

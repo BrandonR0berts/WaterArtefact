@@ -95,6 +95,7 @@
     <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateButterflyTexture.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateH0_Tessendorf.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateHeight_Tessendorf.comp" />
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\InvertAndScaleFFTResult.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Gerstner.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Compute\SurfaceUpdate_Sine.comp" />
     <None Include="..\WaterArtefact\Code\Shaders\Fragment\ConvoluteCubeMap.frag" />

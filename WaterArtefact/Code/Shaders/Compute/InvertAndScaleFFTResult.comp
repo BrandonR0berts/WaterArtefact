@@ -1,0 +1,48 @@
+#version 430 core
+
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+// --------------------------------------------------------------------------------
+
+layout(rgba32f, binding = 0) uniform image2D inputFFTResult; // positional buffer 2 - may be the input data but will not be the output data
+layout(rgba32f, binding = 1) uniform image2D outputHeights;  // Output data - position buffer 1 - may also be the input buffer depending on what the value if log2(n) is
+
+uniform bool readFromPositionBuffer1;
+
+// --------------------------------------------------------------------------------
+
+const float PI = 3.141529;
+
+// --------------------------------------------------------------------------------
+
+void main()
+{
+	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 resolution = imageSize(inputFFTResult);
+
+	// Calculate the scale factor we are going to apply
+	float scaleFactor = float(resolution.x * resolution.x);
+
+	// Load the input data
+	float inputData;
+
+	if(readFromPositionBuffer1)
+		inputData = imageLoad(outputHeights, texelCoord).x;
+	else
+		inputData = imageLoad(inputFFTResult, texelCoord).x;
+
+	int permutationIndex = int(mod(texelCoord.x + texelCoord.y, 2));
+
+	float permutationMultiplier = -1.0;
+
+	if(permutationIndex == 0)
+		permutationMultiplier = 1.0;;
+
+	//float result = permutationMultiplier * (inputData / scaleFactor);
+	float result = inputData;
+	imageStore(outputHeights, texelCoord, vec4(result, 
+	                                           result, 
+											   result, 1.0));
+}
+
+// --------------------------------------------------------------------------------

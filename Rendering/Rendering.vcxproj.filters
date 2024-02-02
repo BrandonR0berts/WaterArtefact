@@ -280,5 +280,8 @@
     <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateButterflyTexture.comp">
       <Filter>Shaders\Compute\Tessendorf</Filter>
     </None>
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\InvertAndScaleFFTResult.comp">
+      <Filter>Shaders\Compute\Tessendorf</Filter>
+    </None>
   </ItemGroup>
 </Project>
