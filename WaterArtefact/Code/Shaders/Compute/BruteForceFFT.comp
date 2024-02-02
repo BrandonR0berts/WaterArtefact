@@ -1,8 +1,7 @@
 #version 430 core
 
 // This shader is to convert from fourier domain into world space domain
-
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
@@ -13,7 +12,7 @@ layout(rgba32f, binding = 1) uniform writeonly image2D worldPositionOutput;   //
 
 uniform vec2 LxLz;
 
-// Useful functionality
+// Useful functionality for complex numbers
 struct ComplexNumber
 {
 	float real;
@@ -70,35 +69,29 @@ void main()
 	float floatResolution = float(resolution.x);
 	vec2  texelCoord      = vec2(pixelCoord) / floatResolution;
 
-	// ----------------------------------------------------------------------------------
+	// ----------------------------
+
+	// Calculate the X vector - which is the (x,z) horizonal position
+	vec2 xVector = vec2((texelCoord.x - 0.5) * floatResolution, 
+					    (texelCoord.y - 0.5) * floatResolution);
+
+	// ----------------------------
 
 	ComplexNumber result;
 	result.real    = 0.0;
 	result.complex = 0.0;
 
-	// ----------------------------
-
-	// Calculate the X vector
-	// First calculate where we are on the mesh
-	vec2 xVector = vec2((texelCoord.x - 0.5) * floatResolution, 
-					    (texelCoord.y - 0.5) * floatResolution);
-
-	// Now multiply by LxLz
-//	xVector.x *= LxLz.x;
-//	xVector.x *= LxLz.y;
-//
-//	// Now divide by the amount of points
-//	xVector.x /= floatResolution;
-//	xVector.y /= floatResolution;
-
-	// ----------------------------
+	float n;
+	float m;
+	vec2  k;
+	float kDotX;
 
 	// Go through every pixel on the screen, perform the FFT equation to it and sum them
 	for(int z = 0; z < resolution.y; z++)
 	{
 		for(int x = 0; x < resolution.x; x++)
 		{
-			// h~(k, t) * exp(ik dot x)
+			// h~(k, t) * exp(i * dot(k, x))
 			// where h~(k, t) is the value read from the pixel
 			// and k = (2 * pi * n / lx, 2 * pi * m / lz)
 			// And -N/2 < n < N/2
@@ -108,12 +101,12 @@ void main()
 			// exp(ik dot x) = cos(k dot x) + isin(k dot x)
 
 			// Calculate k
-			float n = ((float(x) / floatResolution) - 0.5) * floatResolution;
-			float m = ((float(z) / floatResolution) - 0.5) * floatResolution;
+			n = ((float(x) / floatResolution) - 0.5) * floatResolution;
+			m = ((float(z) / floatResolution) - 0.5) * floatResolution;
 
-			vec2 k = CreateK(n, m, LxLz);
+			k = CreateK(n, m, LxLz);
 
-			float kDotX = dot(xVector, k);
+			kDotX = dot(xVector, k);
 
 			ComplexNumber multiplier;
 			multiplier.real    = cos(kDotX);

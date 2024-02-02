@@ -37,7 +37,7 @@ namespace Rendering
 		WaterSimulation();
 		~WaterSimulation();
 
-		void               RenderDebugMenu();
+		void                RenderDebugMenu();
 
 		void                Update(const float deltaTime);
 		void                Render(Rendering::Camera* camera, Texture::CubeMapTexture* skybox);
@@ -72,9 +72,18 @@ namespace Rendering
 		unsigned int*                           GenerateElementData(unsigned int dimensions);
 		Maths::Vector::Vector4D<float>*         GenerateGaussianData();
 
-		unsigned char ConvertToUnsignedChar(float value);
+		void RunInverseFFT();
 
+		// ------------------------------------------------------------- //
 		// --------------------- Modelling surface --------------------- //
+		// ------------------------------------------------------------- //
+		 
+		// Which approach we are currently displaying and updating
+		SimulationMethods              mModellingApproach;
+
+		// Parameters for the realistic ocean simulation
+		TessendorfWaveData             mTessendorfData;
+
 		// Buffer holding the verticies of the water's surface
 		Buffers::VertexBufferObject*   mWaterVBO;
 
@@ -83,19 +92,14 @@ namespace Rendering
 		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Sine;
 		ShaderPrograms::ShaderProgram* mWaterMovementComputeShader_Gerstner;
 
-		ShaderPrograms::ShaderProgram* mGenerateH0_ComputeShader;
-		ShaderPrograms::ShaderProgram* mCreateFrequencyValues_ComputeShader;
-		ShaderPrograms::ShaderProgram* mConvertToHeightValues_ComputeShader;
-		ShaderPrograms::ShaderProgram* mBruteForceFFT;
-
-		SimulationMethods              mModellingApproach;
+		// Tessendorf functionality
+		ShaderPrograms::ShaderProgram* mGenerateH0_ComputeShader;                 // Create H0 texture
+		ShaderPrograms::ShaderProgram* mCreateFrequencyValues_ComputeShader;      // Convert H0 to H(k, t)
+		ShaderPrograms::ShaderProgram* mConvertToHeightValues_ComputeShader_FFT;  // Converts from H(k, t) to a height map
 
 		// Buffer that holds the world space X-Y-Z 
 		Texture::Texture2D*            mPositionalBuffer;
 		Texture::Texture2D*            mSecondPositionalBuffer; // Needed for the tessendorf FFT generation
-
-		Texture::Texture2D*            mH0Buffer;
-		Texture::Texture2D*            mFourierDomainValues;
 
 		// Buffer that holds the normal of the point given out by the computer shader
 		Texture::Texture2D*            mNormalBuffer;
@@ -109,16 +113,16 @@ namespace Rendering
 		// Buffer holding gaussian random numbers for H0 generation
 		Texture::Texture2D*            mRandomNumberBuffer;
 
-		float mRunningTime;
+		Texture::Texture2D*            mH0Buffer;            // H0
+		Texture::Texture2D*            mFourierDomainValues; // H(k, t)
 
-		// Single sine wave modelling variables
+		// Sine wave modelling data
 		std::vector<SingleSineDataSet>      mSineWaveData;
 		Buffers::ShaderStorageBufferObject* mSineWaveSSBO;
 
+		// Gerstner wave modelling data
 		std::vector<SingleGerstnerWaveData> mGersnterWaveData;
 		Buffers::ShaderStorageBufferObject* mGerstnerWaveSSBO;
-
-		TessendorfWaveData                  mTessendorfData;
 
 		// Level of detail - to allow for the ocean to go on forever
 		int                                 mLevelOfDetailCount;
@@ -128,22 +132,19 @@ namespace Rendering
 		unsigned int                        mDimensions;
 		float                               mDistanceBetweenVerticies;
 
-		unsigned int mTextureResolution;
-
-		float        mPhilipsConstant;
+		unsigned int                        mTextureResolution;
 
 		// --------------------- Rendering surface --------------------- //
-		Buffers::VertexArrayObject*    mWaterVAO;
-
-		Buffers::ElementBufferObjects* mWaterEBO;
+		Buffers::VertexArrayObject*         mWaterVAO;
+		Buffers::ElementBufferObjects*      mWaterEBO;
 
 		// Shader program used for rendering the surface of the water volume
-		ShaderPrograms::ShaderProgram* mSurfaceRenderShaders;
+		ShaderPrograms::ShaderProgram*      mSurfaceRenderShaders;
 
-		unsigned int mVertexCount;
-		unsigned int mElementCount;
+		unsigned int                        mVertexCount;
+		unsigned int                        mElementCount;
 
-		RenderingWaterData        mRenderingData;
+		RenderingWaterData                  mRenderingData;
 
 		// --------------------- Other --------------------- //
 
@@ -151,11 +152,9 @@ namespace Rendering
 		bool                           mSimulationPaused;
 		bool                           mWireframe;
 
-		bool                           mBruteForce;
+		float                          mRunningTime;
 
-		Maths::Vector::Vector2D<float> mLxLz;
-
-		const unsigned int kComputeShaderThreadClusterSize;
+		const unsigned int             kComputeShaderThreadClusterSize;
 	};
 
 	// ---------------------------------------

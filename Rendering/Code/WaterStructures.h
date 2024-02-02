@@ -76,6 +76,8 @@ namespace Rendering
 			: mWindVelocity(15.0f, 0.1f)
 			, mGravity(9.81f)
 			, mRepeatAfterTime(10.0f)
+			, mLxLz(1024.0f, 1024.0f)
+			, mPhilipsConstant(0.2f)
 		{
 
 		}
@@ -83,6 +85,8 @@ namespace Rendering
 		Maths::Vector::Vector2D<float> mWindVelocity;
 		float                          mGravity;
 		float                          mRepeatAfterTime;
+		Maths::Vector::Vector2D<float> mLxLz;
+		float                          mPhilipsConstant;
 	};
 
 	struct RenderingWaterData

@@ -24,35 +24,32 @@ namespace Rendering
 	// ---------------------------------------------
 
 	WaterSimulation::WaterSimulation()
-		: mWaterVBO(nullptr)
+		: mModellingApproach(SimulationMethods::Sine)
+
+		, mTessendorfData()
+
+		, mWaterVBO(nullptr)
 		, mWaterMovementComputeShader_Sine(nullptr)
 		, mWaterMovementComputeShader_Gerstner(nullptr)
 
 		, mGenerateH0_ComputeShader(nullptr)
 		, mCreateFrequencyValues_ComputeShader(nullptr)
-		, mConvertToHeightValues_ComputeShader(nullptr)
-		, mBruteForceFFT(nullptr)
-
-		, mModellingApproach(SimulationMethods::Sine)
+		, mConvertToHeightValues_ComputeShader_FFT(nullptr)
 
 		, mPositionalBuffer(nullptr)
 		, mSecondPositionalBuffer(nullptr)
-		, mH0Buffer(nullptr)
-		, mFourierDomainValues(nullptr)
 		, mNormalBuffer(nullptr)
 		, mTangentBuffer(nullptr)
 		, mBiNormalBuffer(nullptr)
 		, mRandomNumberBuffer(nullptr)
-
-		, mRunningTime(0.0f)
+		, mH0Buffer(nullptr)
+		, mFourierDomainValues(nullptr)
 
 		, mSineWaveData()
 		, mSineWaveSSBO()
 
 		, mGersnterWaveData()
 		, mGerstnerWaveSSBO()
-
-		, mTessendorfData()
 
 		, mLevelOfDetailCount(0)
 		, mUsingLODs(true)
@@ -64,21 +61,20 @@ namespace Rendering
 
 		, mTextureResolution(1024) // 1024
 
-		, mPhilipsConstant(0.2f)
-
 		, mWaterVAO(nullptr)
+		, mWaterEBO(nullptr)
 
 		, mSurfaceRenderShaders(nullptr)
+
+		, mVertexCount(0)
+		, mElementCount(0)
+
+		, mRenderingData()
 
 		, mSimulationPaused(false)
 		, mWireframe(false)
 
-		, mWaterEBO(nullptr)
-		, mElementCount(0)
-		, mRenderingData()
-
-		, mBruteForce(true)
-		, mLxLz(1024.0f, 1024.0f) // 1024
+		, mRunningTime(0.0f)
 
 		, kComputeShaderThreadClusterSize(32)
 	{
@@ -119,8 +115,8 @@ namespace Rendering
 		delete mCreateFrequencyValues_ComputeShader;
 		mCreateFrequencyValues_ComputeShader = nullptr;
 
-		delete mConvertToHeightValues_ComputeShader;
-		mConvertToHeightValues_ComputeShader = nullptr;
+		delete mConvertToHeightValues_ComputeShader_FFT;
+		mConvertToHeightValues_ComputeShader_FFT = nullptr;
 
 		// --------------------------------------
 
@@ -177,8 +173,8 @@ namespace Rendering
 
 			mGenerateH0_ComputeShader->SetFloat("gravity",          mTessendorfData.mGravity);
 			mGenerateH0_ComputeShader->SetVec2("windVelocity",      mTessendorfData.mWindVelocity);
-			mGenerateH0_ComputeShader->SetFloat("phillipsConstant", mPhilipsConstant);
-			mGenerateH0_ComputeShader->SetVec2("LxLz",              mLxLz);
+			mGenerateH0_ComputeShader->SetFloat("phillipsConstant", mTessendorfData.mPhilipsConstant);
+			mGenerateH0_ComputeShader->SetVec2("LxLz",              mTessendorfData.mLxLz);
 
 			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 	}
@@ -293,32 +289,17 @@ namespace Rendering
 			delete computeShader;
 		}
 
-		if (!mConvertToHeightValues_ComputeShader)
+		if (!mConvertToHeightValues_ComputeShader_FFT)
 		{
-			mConvertToHeightValues_ComputeShader = new ShaderPrograms::ShaderProgram();
+			mConvertToHeightValues_ComputeShader_FFT = new ShaderPrograms::ShaderProgram();
 
 			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/ConvertFrequencyToWorldHeight.comp");
 
-			mConvertToHeightValues_ComputeShader->AttachShader(computeShader);
+			mConvertToHeightValues_ComputeShader_FFT->AttachShader(computeShader);
 
-				mConvertToHeightValues_ComputeShader->LinkShadersToProgram();
+				mConvertToHeightValues_ComputeShader_FFT->LinkShadersToProgram();
 
-			mConvertToHeightValues_ComputeShader->DetachShader(computeShader);
-
-			delete computeShader;
-		}
-
-		if (!mBruteForceFFT)
-		{
-			mBruteForceFFT = new ShaderPrograms::ShaderProgram();
-
-			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/BruteForceFFT.comp");
-
-			mBruteForceFFT->AttachShader(computeShader);
-
-				mBruteForceFFT->LinkShadersToProgram();
-
-			mBruteForceFFT->DetachShader(computeShader);
+			mConvertToHeightValues_ComputeShader_FFT->DetachShader(computeShader);
 
 			delete computeShader;
 		}
@@ -735,7 +716,7 @@ namespace Rendering
 					GenerateH0();
 				}
 
-				if (ImGui::InputFloat("Phillips Constant", &mPhilipsConstant))
+				if (ImGui::InputFloat("Phillips Constant", &mTessendorfData.mPhilipsConstant))
 				{
 					GenerateH0();
 				}
@@ -749,10 +730,8 @@ namespace Rendering
 
 					mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
 				}
-				
-				ImGui::Checkbox("Brute force the FFT", &mBruteForce);
 
-				if (ImGui::InputFloat2("LxLz", &mLxLz.x))
+				if (ImGui::InputFloat2("LxLz", &mTessendorfData.mLxLz.x))
 				{
 					GenerateH0();
 				}
@@ -824,7 +803,7 @@ namespace Rendering
 					mCreateFrequencyValues_ComputeShader->SetFloat("time",            mRunningTime);
 					mCreateFrequencyValues_ComputeShader->SetFloat("gravity",         mTessendorfData.mGravity);
 					mCreateFrequencyValues_ComputeShader->SetFloat("repeatAfterTime", mTessendorfData.mRepeatAfterTime);
-					mCreateFrequencyValues_ComputeShader->SetVec2("LxLz",             mLxLz);
+					mCreateFrequencyValues_ComputeShader->SetVec2("LxLz",             mTessendorfData.mLxLz);
 
 					mFourierDomainValues->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); // Output fourier domain values
 					mNormalBuffer       ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); // Normals
@@ -837,43 +816,46 @@ namespace Rendering
 
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-				if (mBruteForce)
-				{
-					mBruteForceFFT->UseProgram();
-					    mBruteForceFFT->SetVec2("LxLz", mLxLz);
-
-						mFourierDomainValues->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-						mPositionalBuffer   ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
-					glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
-
-					mBruteForce = false;
-				}
-				else
-				{
-					// Now convert to world space heights
-					// Determine how many passess are needed
-					//unsigned int passCount = std::log2(mTextureResolution) * 2; // * 2 as this is a 2D texture, not a 1D set of data
-
-					//for(unsigned int i = 0; i < debugStepDistance; i++)
-					//{
-					//	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-					//
-					//	mConvertToHeightValues_ComputeShader->UseProgram();
-
-					//		mFourierDomainValues   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-					//		mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-					//		mSecondPositionalBuffer->BindForComputeShader(2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-					//		mConvertToHeightValues_ComputeShader->SetBool("finalStepOfProcessing", i == (passCount - 1));
-					//		mConvertToHeightValues_ComputeShader->SetInt("jumpDistance",           std::pow(2.0, i));
-					//		mConvertToHeightValues_ComputeShader->SetInt("passCount",              i);
-
-					//	// Divide by 2 as each shader call stores 2 values
-					//	glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / 2 * kComputeShaderThreadClusterSize, 1);
-					//}
-				}
+				RunInverseFFT();				
+				
 			break;
+		}
+	}
+
+	void WaterSimulation::RunInverseFFT()
+	{
+		// Now convert to world space heights
+		// Determine how many passess are needed
+		unsigned int passCount = std::log2(mTextureResolution); // * 2 as this is a 2D texture, not a 1D set of data
+
+		mConvertToHeightValues_ComputeShader_FFT->UseProgram();
+
+		mFourierDomainValues   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+		mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+		mSecondPositionalBuffer->BindForComputeShader(2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", true);
+
+		// Horizontal passes
+		for (unsigned int i = 0; i < passCount; i++)
+		{
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+			// Divide by 2 as each shader call stores 2 values
+			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / 2 * kComputeShaderThreadClusterSize, 1);
+		}
+
+		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", false);
+
+		// Vertical passes
+		for (unsigned int i = 0; i < passCount; i++)
+		{
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+
+			// Divide by 2 as each shader call stores 2 values
+			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / 2 * kComputeShaderThreadClusterSize, 1);
 		}
 	}
 
@@ -1185,18 +1167,6 @@ namespace Rendering
 		}
 
 		return returnData;
-	}
-
-	// ---------------------------------------------
-
-	unsigned char WaterSimulation::ConvertToUnsignedChar(float value)
-	{
-		// Cap the value to being 0 -> 1
-		value = std::min<float>(1.0, value);
-		value = std::max<float>(0.0, value);
-
-		// Now multiply by 255
-		return unsigned char(value * 255.0f);
 	}
 
 	// ---------------------------------------------
