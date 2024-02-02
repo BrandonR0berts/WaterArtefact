@@ -259,28 +259,6 @@ namespace Rendering
 				((OpenGLRenderPipeline*)sRenderPipeline)->ResetTextureBindingInfo();
 			}
 
-			// ------                                                 ---- //
-			 
-			// If the player has not got the window selected then assume they dont want to have it be rendering at the same rate, so limit the framerate to a much lower number
-			if (!mWindowFocused)
-			{
-				ClearBuffers();
-
-				Render((float)deltaTime);
-
-				Engine::Timer::PerformanceTimings::AddTiming(Engine::Timer::PerformanceTimingAreas::Render_WholeFrame_AmountCapped, wholeRenderFrameTimer_UnCapped.GetCurrentTimeSeconds());
-
-					SwapBuffers();
-
-					PollEvents();
-
-					std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-				Engine::Timer::PerformanceTimings::AddTiming(Engine::Timer::PerformanceTimingAreas::Render_WholeFrame_AmountCapped, wholeRenderFrameTimer_Capped.GetCurrentTimeSeconds());
-
-				continue;
-			}
-
 			// -------
 
 			if (GetBeingResized())
