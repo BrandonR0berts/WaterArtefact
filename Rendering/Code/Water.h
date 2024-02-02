@@ -44,12 +44,13 @@ namespace Rendering
 
 		bool                IsBelowSurface(Maths::Vector::Vector3D<float> position);
 
-		Texture::Texture2D* GetPositionalBuffer()   { return mPositionalBuffer; }
+		Texture::Texture2D* GetPositionalBuffer()   { return mPositionalBuffer;   }
 		Texture::Texture2D* GetPositionalBuffer2()  { return mSecondPositionalBuffer; }
-		Texture::Texture2D* GetNormalBuffer()       { return mNormalBuffer;     }
-		Texture::Texture2D* GetTangentBuffer()      { return mTangentBuffer;    }
-		Texture::Texture2D* GetBinormalBuffer()     { return mBiNormalBuffer;   }
+		Texture::Texture2D* GetNormalBuffer()       { return mNormalBuffer;       }
+		Texture::Texture2D* GetTangentBuffer()      { return mTangentBuffer;      }
+		Texture::Texture2D* GetBinormalBuffer()     { return mBiNormalBuffer;     }
 		Texture::Texture2D* GetRandomNumberBuffer() { return mRandomNumberBuffer; }
+		Texture::Texture2D* GetButterflyTexture()   { return mButterflyTexture;   }
 
 		Texture::Texture2D* GetH0Buffer()                  { return mH0Buffer; }
 		Texture::Texture2D* GetFourierDomainValuesBuffer() { return mFourierDomainValues; }
@@ -74,6 +75,9 @@ namespace Rendering
 
 		void RunInverseFFT();
 
+		// this needs to be re-ran every time the resolution of the heightmap changes
+		void CreateButterflyTexture();
+
 		// ------------------------------------------------------------- //
 		// --------------------- Modelling surface --------------------- //
 		// ------------------------------------------------------------- //
@@ -97,6 +101,8 @@ namespace Rendering
 		ShaderPrograms::ShaderProgram* mCreateFrequencyValues_ComputeShader;      // Convert H0 to H(k, t)
 		ShaderPrograms::ShaderProgram* mConvertToHeightValues_ComputeShader_FFT;  // Converts from H(k, t) to a height map
 
+		ShaderPrograms::ShaderProgram* mGenerateButterflyFFTData;
+
 		// Buffer that holds the world space X-Y-Z 
 		Texture::Texture2D*            mPositionalBuffer;
 		Texture::Texture2D*            mSecondPositionalBuffer; // Needed for the tessendorf FFT generation
@@ -115,6 +121,9 @@ namespace Rendering
 
 		Texture::Texture2D*            mH0Buffer;            // H0
 		Texture::Texture2D*            mFourierDomainValues; // H(k, t)
+
+		// Texture to hold the multipliers used during the FFT process
+		Texture::Texture2D*			   mButterflyTexture;
 
 		// Sine wave modelling data
 		std::vector<SingleSineDataSet>      mSineWaveData;

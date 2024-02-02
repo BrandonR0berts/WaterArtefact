@@ -44,6 +44,7 @@ namespace Rendering
 		, mRandomNumberBuffer(nullptr)
 		, mH0Buffer(nullptr)
 		, mFourierDomainValues(nullptr)
+		, mButterflyTexture(nullptr)
 
 		, mSineWaveData()
 		, mSineWaveSSBO()
@@ -304,6 +305,21 @@ namespace Rendering
 			delete computeShader;
 		}
 
+		if (!mGenerateButterflyFFTData)
+		{
+			mGenerateButterflyFFTData = new ShaderPrograms::ShaderProgram();
+
+			Shaders::ComputeShader* computeShader = new Shaders::ComputeShader("Code/Shaders/Compute/GenerateButterflyTexture.comp");
+
+			mGenerateButterflyFFTData->AttachShader(computeShader);
+
+				mGenerateButterflyFFTData->LinkShadersToProgram();
+
+			mGenerateButterflyFFTData->DetachShader(computeShader);
+
+			delete computeShader;
+		}
+
 		mModellingApproach = SimulationMethods::Sine;
 
 		// --------------------------------------------------------------
@@ -482,6 +498,32 @@ namespace Rendering
 
 			delete[] randomNumberData;
 		}
+
+		if (!mButterflyTexture)
+		{
+			mButterflyTexture = new Texture::Texture2D();
+
+			mButterflyTexture->InitEmpty(std::log2(mTextureResolution), mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+
+			CreateButterflyTexture();
+		}
+	}
+
+	// ---------------------------------------------
+
+	void WaterSimulation::CreateButterflyTexture()
+	{
+		if (!mButterflyTexture)
+		{
+			mButterflyTexture = new Texture::Texture2D();
+
+			mButterflyTexture->InitEmpty(std::log2(mTextureResolution), mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+		}
+
+		mGenerateButterflyFFTData->UseProgram();
+			mButterflyTexture->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+			glDispatchCompute(std::log2(mTextureResolution), mTextureResolution / kComputeShaderThreadClusterSize, 1);
 	}
 
 	// ---------------------------------------------
@@ -826,13 +868,14 @@ namespace Rendering
 	{
 		// Now convert to world space heights
 		// Determine how many passess are needed
-		unsigned int passCount = std::log2(mTextureResolution); // * 2 as this is a 2D texture, not a 1D set of data
+		unsigned int passCount = std::log2(mTextureResolution);
 
 		mConvertToHeightValues_ComputeShader_FFT->UseProgram();
 
-		mFourierDomainValues   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+		mFourierDomainValues   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY,  GL_RGBA32F);
 		mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 		mSecondPositionalBuffer->BindForComputeShader(2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+		mButterflyTexture      ->BindForComputeShader(3, 0, GL_FALSE, 0, GL_READ_ONLY,  GL_RGBA32F);
 
 		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", true);
 
@@ -841,8 +884,9 @@ namespace Rendering
 		{
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-			// Divide by 2 as each shader call stores 2 values
-			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / 2 * kComputeShaderThreadClusterSize, 1);
+			mConvertToHeightValues_ComputeShader_FFT->SetInt("passCount", i);
+
+			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 		}
 
 		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", false);
@@ -852,10 +896,9 @@ namespace Rendering
 		{
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+			mConvertToHeightValues_ComputeShader_FFT->SetInt("passCount", i);
 
-
-			// Divide by 2 as each shader call stores 2 values
-			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / 2 * kComputeShaderThreadClusterSize, 1);
+			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 		}
 	}
 

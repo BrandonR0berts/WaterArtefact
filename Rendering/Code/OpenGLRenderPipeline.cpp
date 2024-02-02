@@ -401,6 +401,11 @@ namespace Rendering
 				mDebugVisualisationOverride = BufferViewOverrideTypes::Depth;
 			}
 
+			if (ImGui::Button("Butterfly"))
+			{
+				mDebugVisualisationOverride = BufferViewOverrideTypes::ButterflyTexture;
+			}
+
 			if (ImGui::Button("Reset"))
 			{
 				mDebugVisualisationOverride = BufferViewOverrideTypes::None;
@@ -480,6 +485,10 @@ namespace Rendering
 
 		case BufferViewOverrideTypes::RandomNumbers:
 			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetRandomNumberBuffer()->GetTextureID());
+		break;
+
+		case BufferViewOverrideTypes::ButterflyTexture:
+			BindTextureToTextureUnit(GL_TEXTURE0, mWaterSimulation->GetButterflyTexture()->GetTextureID());
 		break;
 		}
 

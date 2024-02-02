@@ -13,16 +13,13 @@ layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
-layout(rgba32f, binding = 0) uniform readonly  image2D fourierDomainInput;    // Input complex data
-layout(rgba32f, binding = 1) uniform image2D worldPositionOutput;             // Output data 1
-layout(rgba32f, binding = 2) uniform image2D worldPositionOutput2;            // Output data 2
+layout(rgba32f, binding = 0) uniform readonly  image2D fourierDomainInput;    // Initial input of complex data
+layout(rgba32f, binding = 1) uniform           image2D worldPositionOutput;   // Output data 1 (ping pong texture 1)
+layout(rgba32f, binding = 2) uniform           image2D worldPositionOutput2;  // Output data 2 (ping pong texture 1)
+layout(rgba32f, binding = 3) uniform           image2D butterflyTexture;      // Butterfly texture
 
-// The distance to jump through the butterfly diagram
-// should go in the pattern of 1->2->4->8 etc until we hit log2(N)
-uniform int jumpDistance;
-
-// Bool to determine if we need to divide by N at the end of processing
-uniform bool finalStepOfProcessing;
+// If we are on the horizontal or vertical part of the processing
+uniform bool horizontal;
 
 // The pass index we are currently on
 uniform int passCount;
@@ -74,114 +71,133 @@ int BitReversal(int inputVal, int resoultion)
 	return inputVal & (resoultion - 1);
 }
 
+void HorizontalFFT()
+{
+
+}
+
+void VerticalFFT()
+{
+
+}
+
 // --------------------------------------------------------------------------------
 
 void main()
 {
+	if(horizontal)
+	{
+		HorizontalFFT();
+	}
+	else
+	{
+		VerticalFFT();
+	}
+
 	// ----------------------------------------------------------------------------------
 
 	// true means reading from positional data 2 and outputting to 1
 	// false means reading from positional data 1 and outputting to 2
-	bool baseReadingConfiguration = (mod(passCount, 2) == 0);
-
-	// Get the current pixel we are processing
-	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-
-	// Image resoultion - X and Y dimensions should be the same and a power of 2
-	ivec2 resolution    = imageSize(fourierDomainInput);
-	int   totalElements = resolution.x * resolution.y;
-
-	// ----------------------------------------------------------------------------------
-
-	// Data point 1
-	int oneDimensionCoord = texelCoord.x + (texelCoord.y * resolution.x);       // Convert this pixel into a 1D coord
-
-	// Determine if we are in a portion we need to skip, due to each call calculating two elements
-	int multiple = int(mod(oneDimensionCoord, 2 * jumpDistance));
-
-	if(multiple >= jumpDistance)
-	{
-		// adjust back into the top half of this section
-		oneDimensionCoord -= jumpDistance;
-
-		// Skip to the other half of the image, relative to where we are into this first half
-		oneDimensionCoord += totalElements / 2;
-	}
-
-	int   bitReversalCoord        = BitReversal(oneDimensionCoord, totalElements);       // Calculate where in the bit reversal order this index is - aka jump to the right position in the data
-	ivec2 firstPixelCoord         = ivec2(mod(bitReversalCoord, resolution.x), bitReversalCoord / resolution.x);
-
-	// -------------------
-
-	// Data point 2 - this point is the first one plus the jump amount down
-	int   secondOneDimensionCoord = oneDimensionCoord + jumpDistance;
-	int   secondBitReversalCoord  = BitReversal(secondOneDimensionCoord, totalElements);
-	ivec2 secondPixelCoord        = ivec2(mod(secondBitReversalCoord, resolution.x), secondBitReversalCoord / resolution.x);
-
-	// Grab the input data from the correct buffer
-	ComplexNumber firstInputData;
-	ComplexNumber secondInputData;
-	if(passCount == 0)
-	{
-		firstInputData  = ComplexCast(imageLoad(fourierDomainInput, firstPixelCoord).xy);
-		secondInputData = ComplexCast(imageLoad(fourierDomainInput, secondPixelCoord).xy);
-	}
-	else if(baseReadingConfiguration)
-	{
-		firstInputData  = ComplexCast(imageLoad(worldPositionOutput2, firstPixelCoord).xy);
-		secondInputData = ComplexCast(imageLoad(worldPositionOutput2, secondPixelCoord).xy);
-	}
-	else
-	{
-		firstInputData  = ComplexCast(imageLoad(worldPositionOutput, firstPixelCoord).xy);
-		secondInputData = ComplexCast(imageLoad(worldPositionOutput, secondPixelCoord).xy);
-	}
-
-	// ----------------------------------------------------------------------------------
-
-	// Determine what the fourier multiplier for this stage is
-	// W = exp((2 * PI * k) / N)
-	// Where k is the current 
-	float internalFactor = (2.0 * PI * float(multiple)) / (2.0 * float(jumpDistance));
-
-	ComplexNumber factor;
-	factor.real          = cos(internalFactor);
-	factor.complex       = sin(internalFactor);
-
-	// Run the calculation for this stage of the butterfly diagram 
-	ComplexNumber multipliedFactor = MultiplyComplex(factor, secondInputData);
-	ComplexNumber firstResult      = AddComplexNumber(firstInputData,  multipliedFactor);
-	ComplexNumber secondResult     = AddComplexNumber(firstInputData, MultiplyComplex(multipliedFactor, -1.0));
-
-	if(finalStepOfProcessing)
-	{
-		firstResult  = DivideComplex(firstResult, float(totalElements));
-		secondResult = DivideComplex(secondResult, float(totalElements));
-	}
-
-	// ----------------------------------------------------------------------------------
-
-	// Output the results calculated into the buffer for the next pass (or if this is the final pass, as the final result)
-	// Determine which buffer we are outputting to
-	ivec2 texelCoord1 = ivec2(mod(oneDimensionCoord,       resolution.x), oneDimensionCoord       / resolution.x);
-	ivec2 texelCoord2 = ivec2(mod(secondOneDimensionCoord, resolution.x), secondOneDimensionCoord / resolution.x);
-
-	if(baseReadingConfiguration)
-	{	
-		//imageStore(worldPositionOutput, texelCoord1, vec4(1.0,  0.0, 0.0, 0.0));
-		//imageStore(worldPositionOutput, texelCoord2, vec4(0.0, 1.0, 0.0, 0.0));
-
-		imageStore(worldPositionOutput, texelCoord1, vec4(firstResult.real,  firstResult.complex, 0.0, 0.0));
-		imageStore(worldPositionOutput, texelCoord2, vec4(secondResult.real, secondResult.complex, 0.0, 0.0));
-	}
-	else
-	{
-		//imageStore(worldPositionOutput2, texelCoord1, vec4(1.0,  0.0, 0.0, 0.0));
-	//	imageStore(worldPositionOutput2, texelCoord2, vec4(0.0, 1.0, 0.0, 0.0));
-
-		imageStore(worldPositionOutput2, texelCoord1, vec4(firstResult.real,  firstResult.complex, 0.0, 0.0));
-		imageStore(worldPositionOutput2, texelCoord2, vec4(secondResult.real, secondResult.complex, 0.0, 0.0));
-	}
+//	bool baseReadingConfiguration = (mod(passCount, 2) == 0);
+//
+//	// Get the current pixel we are processing
+//	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+//
+//	// Image resoultion - X and Y dimensions should be the same and a power of 2
+//	ivec2 resolution    = imageSize(fourierDomainInput);
+//	int   totalElements = resolution.x * resolution.y;
+//
+//	// ----------------------------------------------------------------------------------
+//
+//	// Data point 1
+//	int oneDimensionCoord = texelCoord.x + (texelCoord.y * resolution.x);       // Convert this pixel into a 1D coord
+//
+//	// Determine if we are in a portion we need to skip, due to each call calculating two elements
+//	int multiple = int(mod(oneDimensionCoord, 2 * jumpDistance));
+//
+//	if(multiple >= jumpDistance)
+//	{
+//		// adjust back into the top half of this section
+//		oneDimensionCoord -= jumpDistance;
+//
+//		// Skip to the other half of the image, relative to where we are into this first half
+//		oneDimensionCoord += totalElements / 2;
+//	}
+//
+//	int   bitReversalCoord        = BitReversal(oneDimensionCoord, totalElements);       // Calculate where in the bit reversal order this index is - aka jump to the right position in the data
+//	ivec2 firstPixelCoord         = ivec2(mod(bitReversalCoord, resolution.x), bitReversalCoord / resolution.x);
+//
+//	// -------------------
+//
+//	// Data point 2 - this point is the first one plus the jump amount down
+//	int   secondOneDimensionCoord = oneDimensionCoord + jumpDistance;
+//	int   secondBitReversalCoord  = BitReversal(secondOneDimensionCoord, totalElements);
+//	ivec2 secondPixelCoord        = ivec2(mod(secondBitReversalCoord, resolution.x), secondBitReversalCoord / resolution.x);
+//
+//	// Grab the input data from the correct buffer
+//	ComplexNumber firstInputData;
+//	ComplexNumber secondInputData;
+//	if(passCount == 0)
+//	{
+//		firstInputData  = ComplexCast(imageLoad(fourierDomainInput, firstPixelCoord).xy);
+//		secondInputData = ComplexCast(imageLoad(fourierDomainInput, secondPixelCoord).xy);
+//	}
+//	else if(baseReadingConfiguration)
+//	{
+//		firstInputData  = ComplexCast(imageLoad(worldPositionOutput2, firstPixelCoord).xy);
+//		secondInputData = ComplexCast(imageLoad(worldPositionOutput2, secondPixelCoord).xy);
+//	}
+//	else
+//	{
+//		firstInputData  = ComplexCast(imageLoad(worldPositionOutput, firstPixelCoord).xy);
+//		secondInputData = ComplexCast(imageLoad(worldPositionOutput, secondPixelCoord).xy);
+//	}
+//
+//	// ----------------------------------------------------------------------------------
+//
+//	// Determine what the fourier multiplier for this stage is
+//	// W = exp((2 * PI * k) / N)
+//	// Where k is the current 
+//	float internalFactor = (2.0 * PI * float(multiple)) / (2.0 * float(jumpDistance));
+//
+//	ComplexNumber factor;
+//	factor.real          = cos(internalFactor);
+//	factor.complex       = sin(internalFactor);
+//
+//	// Run the calculation for this stage of the butterfly diagram 
+//	ComplexNumber multipliedFactor = MultiplyComplex(factor, secondInputData);
+//	ComplexNumber firstResult      = AddComplexNumber(firstInputData,  multipliedFactor);
+//	ComplexNumber secondResult     = AddComplexNumber(firstInputData, MultiplyComplex(multipliedFactor, -1.0));
+//
+//	if(finalStepOfProcessing)
+//	{
+//		firstResult  = DivideComplex(firstResult, float(totalElements));
+//		secondResult = DivideComplex(secondResult, float(totalElements));
+//	}
+//
+//	// ----------------------------------------------------------------------------------
+//
+//	// Output the results calculated into the buffer for the next pass (or if this is the final pass, as the final result)
+//	// Determine which buffer we are outputting to
+//	ivec2 texelCoord1 = ivec2(mod(oneDimensionCoord,       resolution.x), oneDimensionCoord       / resolution.x);
+//	ivec2 texelCoord2 = ivec2(mod(secondOneDimensionCoord, resolution.x), secondOneDimensionCoord / resolution.x);
+//
+//	if(baseReadingConfiguration)
+//	{	
+//		//imageStore(worldPositionOutput, texelCoord1, vec4(1.0,  0.0, 0.0, 0.0));
+//		//imageStore(worldPositionOutput, texelCoord2, vec4(0.0, 1.0, 0.0, 0.0));
+//
+//		imageStore(worldPositionOutput, texelCoord1, vec4(firstResult.real,  firstResult.complex, 0.0, 0.0));
+//		imageStore(worldPositionOutput, texelCoord2, vec4(secondResult.real, secondResult.complex, 0.0, 0.0));
+//	}
+//	else
+//	{
+//		//imageStore(worldPositionOutput2, texelCoord1, vec4(1.0,  0.0, 0.0, 0.0));
+//	//	imageStore(worldPositionOutput2, texelCoord2, vec4(0.0, 1.0, 0.0, 0.0));
+//
+//		imageStore(worldPositionOutput2, texelCoord1, vec4(firstResult.real,  firstResult.complex, 0.0, 0.0));
+//		imageStore(worldPositionOutput2, texelCoord2, vec4(secondResult.real, secondResult.complex, 0.0, 0.0));
+//	}
 
 	// ----------------------------------------------------------------------------------
 }

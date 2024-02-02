@@ -277,7 +277,7 @@
     <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateHeight_Tessendorf.comp">
       <Filter>Shaders\Compute\Tessendorf</Filter>
     </None>
-    <None Include="..\WaterArtefact\Code\Shaders\Compute\BruteForceFFT.comp">
+    <None Include="..\WaterArtefact\Code\Shaders\Compute\GenerateButterflyTexture.comp">
       <Filter>Shaders\Compute\Tessendorf</Filter>
     </None>
   </ItemGroup>

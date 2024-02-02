@@ -1,0 +1,110 @@
+#version 430 core
+
+// Size of 1 on the X as it is much smaller than the Y scale
+// The texture resolution is (log2(n), n)
+layout(local_size_x = 1, local_size_y = 32, local_size_z = 1) in;
+
+// --------------------------------------------------------------------------------
+
+// Final value output buffer
+// Red and green hold the twiddle factors for the fft calculations
+// blue and alpha hold the index for the input data
+layout(rgba32f, binding = 0) uniform writeonly image2D outputTexture;
+
+// --------------------------------------------------------------------------------
+
+const float PI = 3.141529;
+
+// --------------------------------------------------------------------------------
+
+struct ComplexNumber
+{
+	float real;
+	float complex;
+};
+
+// --------------------------------------------------------------------------------
+
+int bitReverse(int valueIn)
+{
+	int result = 0;
+
+	while(valueIn > 0)
+	{
+		// Bitshift the result to the right 1
+		result = result << 1;
+
+		// If the value is a 1 then keep it
+		if((valueIn & 1) == 1)
+			result ^= 1;
+
+		// Bitshift the in value to the right 1
+		valueIn = valueIn >> 1;
+	}
+
+	return result;
+}
+
+// --------------------------------------------------------------------------------
+
+void main()
+{
+	// The pixel we are processing
+	ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+
+	// Get the texture resolution
+	ivec2 resolution      = imageSize(outputTexture);
+	float floatResolution = float(resolution.y);
+
+	// Calculate the twiddle power
+	float k = mod(texelCoord.y * (floatResolution / pow(2, texelCoord.x + 1)), resolution.y);
+
+	// Calculate the twiddle factor using the power calculated above
+	ComplexNumber twiddle = ComplexNumber(cos(2.0 * PI * k / floatResolution), sin(2.0 * PI * k / floatResolution));
+
+	// The jump distance of the butterfly equation
+	int butterflyWingspan = int(pow(2, texelCoord.x));
+
+	// Determine if we are in the top or bottom section of a butterfly wing
+	// if our current Y coordinate, wrapped to the right repeating amount, is in the bottom or top half of the wrap
+	int wrappedY = int(mod(texelCoord.y, int(pow(2, texelCoord.x + 1))));
+
+	bool topHalf = true;
+	if(wrappedY >= butterflyWingspan)
+		topHalf = false;
+
+	vec4 outputData = vec4(twiddle.real, twiddle.complex, 0.0, 0.0);
+
+	// If we are in the first step of the generation then we need to bitreverse the indicies
+	if(texelCoord.x == 0)
+	{
+		if(topHalf)
+		{
+			outputData.z = float(bitReverse(texelCoord.y));
+			outputData.w = float(bitReverse(texelCoord.y + 1));
+		}
+		else
+		{
+			outputData.z = float(bitReverse(texelCoord.y - 1));
+			outputData.w = float(bitReverse(texelCoord.y));
+		}
+	}
+	else
+	{
+		if(topHalf)
+		{	
+			outputData.z = texelCoord.y;
+			outputData.w = texelCoord.y + butterflyWingspan;
+		}
+		else
+		{
+			outputData.z = texelCoord.y - butterflyWingspan;
+			outputData.w = texelCoord.y;
+		}
+	}
+
+	// Output the data to the texture
+	imageStore(outputTexture, texelCoord, outputData);
+}
+
+// --------------------------------------------------------------------------------

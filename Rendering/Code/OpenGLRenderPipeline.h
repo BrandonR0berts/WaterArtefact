@@ -40,7 +40,8 @@ namespace Rendering
 		Fourier,
 		Depth,
 		Position2,
-		RandomNumbers
+		RandomNumbers,
+		ButterflyTexture
 	};
 
 	// -----------------------------------------
