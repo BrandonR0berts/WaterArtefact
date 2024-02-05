@@ -58,8 +58,8 @@ namespace Rendering
 
 		, mHighestLODDimensions(0.0f)
 
-		, mDimensions(100)
-		, mDistanceBetweenVerticies(0.3f)
+		, mDimensions(250)
+		, mDistanceBetweenVerticies(0.1f)
 
 		, mTextureResolution(512) // 1024
 
@@ -591,6 +591,7 @@ namespace Rendering
 		ImGui::Begin("Water Simulation Debug");
 
 		ImGui::InputInt("test count", &debugPassCount);
+		ImGui::InputFloat("Fudge :D", &fudgeFactor);
 
 			// Pause
 			if (ImGui::Button("Toggle Simulation Pause"))
@@ -973,21 +974,23 @@ namespace Rendering
 				storingResultInBuffer1 = !storingResultInBuffer1;
 		}
 
-		//glMemoryBarrier(mMemoryBarrierBlockBits);
+		glMemoryBarrier(mMemoryBarrierBlockBits);
 
-		//if (passCount * 2 == debugPassCount)
-		//{
-		//	// Now apply the correct scale factor and positive/negative multipliers
-		//	mFFTFinalStageProgram->UseProgram();
-		//		mFFTFinalStageProgram->SetBool("readFromPositionBuffer1", storingResultInBuffer1);
+		if (passCount * 2 == debugPassCount)
+		{
+			// Now apply the correct scale factor and positive/negative multipliers
+			mFFTFinalStageProgram->UseProgram();
+				mFFTFinalStageProgram->SetBool("readFromPositionBuffer1", storingResultInBuffer1);
 
-		//		mSecondPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-		//		mPositionalBuffer->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+				mFFTFinalStageProgram->SetFloat("fudge", fudgeFactor);
 
-		//	glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
+				mSecondPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+				mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
-		//	glMemoryBarrier(mMemoryBarrierBlockBits);
-		//}
+			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
+
+			glMemoryBarrier(mMemoryBarrierBlockBits);
+		}
 	}
 
 	// ---------------------------------------------
@@ -1270,9 +1273,7 @@ namespace Rendering
 		// This is the seed
 		std::mt19937 gen(rd());
 
-		// Set the mean to 0.5 and standard deviation to being 0.5, so most values will fall within the 0.0 -> 1.0 range
-		// the ones that dont will be capped to 0 and 1
-		std::normal_distribution<float> normalDistibution{0.5, 0.5};
+		std::normal_distribution<float> normalDistibution{1.0, 1.0};
 
 		float randomValue1, randomValue2, randomValue3, randomValue4;
 		unsigned int currentIndex = 0;

@@ -13,6 +13,8 @@ uniform bool readFromPositionBuffer1;
 
 const float PI = 3.141529;
 
+uniform float fudge;
+
 // --------------------------------------------------------------------------------
 
 void main()
@@ -30,6 +32,8 @@ void main()
 		inputData = imageLoad(outputHeights, texelCoord).x;
 	else
 		inputData = imageLoad(inputFFTResult, texelCoord).x;
+
+	inputData *= fudge;
 
 	int permutationIndex = int(mod(texelCoord.x + texelCoord.y, 2));
 

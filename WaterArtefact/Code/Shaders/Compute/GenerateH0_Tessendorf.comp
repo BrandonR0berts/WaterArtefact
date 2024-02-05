@@ -93,8 +93,8 @@ void main()
 
 	// Now convert the random number to being in the right range - at the moment they are from 0 -> 1
 	// We need to convert them to being in the -1 -> 1 range
-	vec2 mappedRandom1 = (inputRandom1 * 2.0) - 1.0;
-	vec2 mappedRandom2 = (inputRandom2 * 2.0) - 1.0;
+	vec2 mappedRandom1 = inputRandom1 - 1.0;
+	vec2 mappedRandom2 = inputRandom2 - 1.0;
 
 	// Determine the n and m positions in mesh space, 
 	// These are the 'x' and 'z' relative positions
