@@ -1,15 +1,1 @@
-- Determine which sections need their times captured
-- Create functionality for running a test that ImGui will hook into
-
-- Add outputting of normals and tangents from the compute shaders
-	- Gerstner waves
-	- Tessendorf approach
-
-- Add imgui way of swapping skyboxes
-
-- Add water refraction
-- Create depth lookup image for colour of the water
-
-- Determine how to properly add random numbers to the H0 shader
-
-- Specular highlights
+- Forum post

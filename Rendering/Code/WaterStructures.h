@@ -128,4 +128,14 @@ namespace Rendering
 		Chopppy,
 		Strange
 	};
+
+	enum class TessendorfWavePresets : char
+	{
+		Calm1,
+		Calm2,
+		Calm3,
+
+		Chopppy1,
+		Chopppy2
+	};
 }

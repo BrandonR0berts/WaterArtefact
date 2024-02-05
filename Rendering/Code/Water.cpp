@@ -78,6 +78,7 @@ namespace Rendering
 
 		, mRunningTime(0.0f)
 		, mMemoryBarrierBlockBits(GL_ALL_BARRIER_BITS)
+		, mScaleFactor(6.25f)
 
 		, kComputeShaderThreadClusterSize(16)
 	{
@@ -590,9 +591,6 @@ namespace Rendering
 	{
 		ImGui::Begin("Water Simulation Debug");
 
-		ImGui::InputInt("test count", &debugPassCount);
-		ImGui::InputFloat("Fudge :D", &fudgeFactor);
-
 			// Pause
 			if (ImGui::Button("Toggle Simulation Pause"))
 			{
@@ -814,29 +812,65 @@ namespace Rendering
 			}
 			if (mModellingApproach == SimulationMethods::Tessendorf)
 			{
-				if (ImGui::InputFloat2("Wind Velocity##Tessendorf", &mTessendorfData.mWindVelocity.x))
+				if (ImGui::CollapsingHeader("Presets##Tessendorf"))
 				{
-					GenerateH0();
+					if (ImGui::Button("Calm1##Tessendorf"))
+					{
+						SetPreset(Rendering::SimulationMethods::Tessendorf, (char)TessendorfWavePresets::Calm1);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
+					}
+
+					if (ImGui::Button("Calm2##Tessendorf"))
+					{
+						SetPreset(Rendering::SimulationMethods::Tessendorf, (char)TessendorfWavePresets::Calm2);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
+					}
+
+					if (ImGui::Button("Calm3##Tessendorf"))
+					{
+						SetPreset(Rendering::SimulationMethods::Tessendorf, (char)TessendorfWavePresets::Calm3);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
+					}
+
+					if (ImGui::Button("Choppy1##Tessendorf"))
+					{
+						SetPreset(Rendering::SimulationMethods::Tessendorf, (char)TessendorfWavePresets::Chopppy1);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
+					}
+
+					if (ImGui::Button("Choppy2##Tessendorf"))
+					{
+						SetPreset(Rendering::SimulationMethods::Tessendorf, (char)TessendorfWavePresets::Chopppy2);
+
+						mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
+					}
 				}
 
-				if (ImGui::InputFloat("Phillips Constant", &mTessendorfData.mPhilipsConstant))
+				if (ImGui::CollapsingHeader("Internal Settings##Tessendorf"))
 				{
-					GenerateH0();
-				}
+					if (ImGui::InputFloat2("Wind Velocity##Tessendorf", &mTessendorfData.mWindVelocity.x))
+					{
+						GenerateH0();
+					}
 
-				ImGui::InputFloat("Gravity##Tessendorf",           &mTessendorfData.mGravity);
-				ImGui::InputFloat("Repeat After Time##Tessendorf", &mTessendorfData.mRepeatAfterTime);
+					if (ImGui::InputFloat("Phillips Constant", &mTessendorfData.mPhilipsConstant))
+					{
+						GenerateH0();
+					}
 
-				if (ImGui::Button("Defaults##Tessendorf"))
-				{
-					mTessendorfData = TessendorfWaveData();
+					ImGui::InputFloat("Gravity##Tessendorf", &mTessendorfData.mGravity);
+					ImGui::InputFloat("Repeat After Time##Tessendorf", &mTessendorfData.mRepeatAfterTime);
 
-					mSurfaceRenderShaders->SetBool("renderingSineGeneration", false);
-				}
+					if (ImGui::InputFloat2("LxLz", &mTessendorfData.mLxLz.x))
+					{
+						GenerateH0();
+					}
 
-				if (ImGui::InputFloat2("LxLz", &mTessendorfData.mLxLz.x))
-				{
-					GenerateH0();
+					ImGui::InputFloat("Scale Factor", &mScaleFactor);
 				}
 			}
 
@@ -941,7 +975,7 @@ namespace Rendering
 		bool storingResultInBuffer1 = true;
 
 		// Horizontal passes
-		for (int i = 0; i < std::min<int>(debugPassCount, passCount); i++)
+		for (int i = 0; i < passCount; i++)
 		{
 			glMemoryBarrier(mMemoryBarrierBlockBits);
 
@@ -956,11 +990,6 @@ namespace Rendering
 		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", false);
 
 		// Vertical passes
-		if (debugPassCount - passCount < 0)
-			passCount = 0;
-		else
-			passCount = std::min(debugPassCount - passCount, passCount);
-
 		for (int i = 0; i < passCount; i++)
 		{
 			glMemoryBarrier(mMemoryBarrierBlockBits);
@@ -976,21 +1005,18 @@ namespace Rendering
 
 		glMemoryBarrier(mMemoryBarrierBlockBits);
 
-		if (passCount * 2 == debugPassCount)
-		{
-			// Now apply the correct scale factor and positive/negative multipliers
-			mFFTFinalStageProgram->UseProgram();
-				mFFTFinalStageProgram->SetBool("readFromPositionBuffer1", storingResultInBuffer1);
+		// Now apply the correct scale factor and positive/negative multipliers
+		mFFTFinalStageProgram->UseProgram();
+			mFFTFinalStageProgram->SetBool("readFromPositionBuffer1", storingResultInBuffer1);
 
-				mFFTFinalStageProgram->SetFloat("fudge", fudgeFactor);
+			mFFTFinalStageProgram->SetFloat("scale", mScaleFactor);
 
-				mSecondPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-				mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+			mSecondPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+			mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
-			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
+		glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 
-			glMemoryBarrier(mMemoryBarrierBlockBits);
-		}
+		glMemoryBarrier(mMemoryBarrierBlockBits);
 	}
 
 	// ---------------------------------------------
@@ -1253,6 +1279,60 @@ namespace Rendering
 
 		case SimulationMethods::Tessendorf:
 			mModellingApproach = SimulationMethods::Tessendorf;
+
+			switch ((TessendorfWavePresets)preset)
+			{
+			case TessendorfWavePresets::Calm1:
+				mTessendorfData.mWindVelocity    = {15.0f, 0.1f};
+				mTessendorfData.mPhilipsConstant = 0.2f;
+				mTessendorfData.mGravity         = 9.81f;
+				mTessendorfData.mRepeatAfterTime = 10.0f;
+				mTessendorfData.mLxLz            = { 1024.0f, 1024.0f };
+				mScaleFactor                     = 6.25f;
+			break;
+			
+			case TessendorfWavePresets::Calm2:
+				mTessendorfData.mWindVelocity    = {15.0f, 10.0f};
+				mTessendorfData.mPhilipsConstant = 0.2f;
+				mTessendorfData.mGravity         = 9.81f;
+				mTessendorfData.mRepeatAfterTime = 50.0f;
+				mTessendorfData.mLxLz            = { 1024.0f, 1024.0f };
+				mScaleFactor                     = 5.0f;				
+			break;
+
+			case TessendorfWavePresets::Calm3:
+				mTessendorfData.mWindVelocity    = {10.0f, 10.0f};
+				mTessendorfData.mPhilipsConstant = 0.2f;
+				mTessendorfData.mGravity         = 5.0f;
+				mTessendorfData.mRepeatAfterTime = 50.0f;
+				mTessendorfData.mLxLz            = { 512.0f, 512.0f };
+				mScaleFactor                     = 6.25f;
+			break;
+				
+			case TessendorfWavePresets::Chopppy1:
+				mTessendorfData.mWindVelocity    = {30.0f, 30.0f};
+				mTessendorfData.mPhilipsConstant = 0.2f;
+				mTessendorfData.mGravity         = 30.0f;
+				mTessendorfData.mRepeatAfterTime = 50.0f;
+				mTessendorfData.mLxLz            = { 3000.0f, 2048.0f };
+				mScaleFactor                     = 2.0f;
+			break;
+
+			case TessendorfWavePresets::Chopppy2:
+				mTessendorfData.mWindVelocity    = {20.0f, 50.0f};
+				mTessendorfData.mPhilipsConstant = 0.3f;
+				mTessendorfData.mGravity         = 10.0f;
+				mTessendorfData.mRepeatAfterTime = 15.0f;
+				mTessendorfData.mLxLz            = { 1000.0f, 1000.0f };
+				mScaleFactor                     = 8.0;
+			break;
+
+			default:
+			return;
+			}
+
+			GenerateH0();
+
 		break;
 
 		default:

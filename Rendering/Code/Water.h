@@ -57,9 +57,6 @@ namespace Rendering
 
 		void                SetPreset(SimulationMethods approach, char preset);
 
-		int   debugPassCount = 0;
-		float fudgeFactor = 5.0f;
-
 	private:
 		void PerformanceTesting();
 
@@ -170,7 +167,9 @@ namespace Rendering
 
 		float                          mRunningTime;
 
-		unsigned int mMemoryBarrierBlockBits;
+		unsigned int                   mMemoryBarrierBlockBits;
+
+		float                          mScaleFactor;
 
 		const unsigned int             kComputeShaderThreadClusterSize;
 	};
