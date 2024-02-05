@@ -1,8 +1,6 @@
 #version 430 core
 
-// The resolution of the image is the N in these equations. N determines the amount of waves that are generated.
-
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
@@ -42,16 +40,19 @@ ComplexNumber MultiplyComplex(ComplexNumber num1, float multiplier)
 
 float PhillipsSpectrum(vec2 k)
 {
-	float kSquared        = dot(k, k);
+	float kSquared        = max(dot(k, k), 0.001);
 	float kToTheFour      = kSquared * kSquared;
 
-	float windSpeed       = sqrt(dot(windVelocity, windVelocity));
+	float windSpeed       = max(sqrt(dot(windVelocity, windVelocity)), 0.01);
 	vec2  windDirection   = normalize(windVelocity);
 
 	float L               = (windSpeed * windSpeed) / gravity;
 
 	float exponentialFactor = (exp(-1.0 / (kSquared * L * L))) / kToTheFour;
-	return phillipsConstant * exponentialFactor * abs(dot(normalize(k), windDirection));
+	float absoluteFactor    = abs(dot(normalize(k), windDirection));
+	float convergenceFactor = exp(-kSquared * pow(LxLz.x / 2000.0, 2.0));
+
+	return clamp(phillipsConstant * exponentialFactor * absoluteFactor * absoluteFactor * convergenceFactor, -4000.0, 4000.0);
 }
 
 // --------------------------------------------------------------------------------
@@ -80,17 +81,20 @@ void main()
 {
 	// The pixel we are on the image
 	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
-	vec2  resolution = imageSize(positionOutput);
+	vec2  resolution = vec2(imageSize(positionOutput));
 
 	// The texel we are on the image (0 -> 1 instead of 0 -> 1024 for example)
 	vec2 texelCoord = vec2(pixelCoord) / resolution;
 
 	// Grab the random numbers from the input image - they are only stored in the XY portions of the image
-	vec2 inputRandom = imageLoad(randomNumbers, pixelCoord).xy;
+	vec4 randomNumbers = imageLoad(randomNumbers, pixelCoord);
+	vec2 inputRandom1  = randomNumbers.xy;
+	vec2 inputRandom2  = randomNumbers.zw;
 
 	// Now convert the random number to being in the right range - at the moment they are from 0 -> 1
 	// We need to convert them to being in the -1 -> 1 range
-	vec2 mappedRandom = (inputRandom * 2.0) - 1.0;
+	vec2 mappedRandom1 = (inputRandom1 * 2.0) - 1.0;
+	vec2 mappedRandom2 = (inputRandom2 * 2.0) - 1.0;
 
 	// Determine the n and m positions in mesh space, 
 	// These are the 'x' and 'z' relative positions
@@ -104,7 +108,8 @@ void main()
 	// ---------------------------------------------------------- //
 
 	// Generate H0, which will then be passed into the final calculations as a starting point
-	ComplexNumber h0          = hZero(k, mappedRandom);
+	ComplexNumber h0          = hZero(k, mappedRandom1);
+	ComplexNumber h0_MinusK   = hZero(-k, mappedRandom2);
 
 	// ---------------------------------------------------------- //
 
@@ -112,6 +117,9 @@ void main()
 
 	outputValue.x = h0.real;
 	outputValue.y = h0.complex;
+
+	outputValue.z = h0_MinusK.real;
+	outputValue.w = h0_MinusK.complex;
 
     imageStore(positionOutput, pixelCoord, outputValue);
 

@@ -41,7 +41,7 @@ namespace Rendering
 		Depth,
 		Position2,
 		RandomNumbers,
-		ButterflyTexture
+		ButterflyTexture,
 	};
 
 	// -----------------------------------------

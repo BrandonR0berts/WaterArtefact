@@ -1,10 +1,6 @@
 #version 430 core
 
-// The resolution of the image is the N in these equations. N determines the amount of waves that are generated.
-
-// This shader is for calculating the current frequency values in the fourier domain.
-// The output of this shader will go into the inverse FFT shader for the final height values
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
@@ -26,7 +22,7 @@ uniform vec2 LxLz;
 // --------------------------------------------------------------------------------
 
 const float PI                      = 3.141529;
-const float dispersionRelation_zero = (2.0 * PI) / repeatAfterTime;
+const float dispersionRelation_zero = (2.0 * PI) / max(repeatAfterTime, 1.0);
 
 // --------------------------------------------------------------------------------
 
@@ -70,10 +66,10 @@ vec2 CreateK(float n, float m, vec2 lxlz)
 // w(k) = [[w(k)/w0]] * w0
 float CreateDispersion(vec2 k)
 {
-	float magnitudeOfK = sqrt(dot(k, k)); // This is the same as length(k)
+	float magnitudeOfK = max(length(k), 0.001);
 	float w            = sqrt(magnitudeOfK * gravity);
 
-	return float(floor(w / dispersionRelation_zero)) * dispersionRelation_zero;
+	return floor(w / dispersionRelation_zero) * dispersionRelation_zero;
 }
 
 // --------------------------------------------------------------------------------
@@ -104,7 +100,7 @@ void main()
 	// Grab the H0 values we are going to be using
 	vec4          inputData   = imageLoad(h0Input, pixelCoord);
 	ComplexNumber h0          = ComplexCast(inputData.xy);
-	ComplexNumber h0Transpose = ComplexCast(imageLoad(h0Input, ivec2(pixelCoord.y, pixelCoord.x)).xy);
+	ComplexNumber h0Transpose = ComplexCast(inputData.zw);
 
 	// Convert the exponential equations into sine and cosine using euler's equation
 	// e^^ix = cos(x) + isin(x)

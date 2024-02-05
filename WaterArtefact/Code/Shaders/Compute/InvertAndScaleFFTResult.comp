@@ -1,6 +1,6 @@
 #version 430 core
 
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 // --------------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ void main()
 	ivec2 resolution = imageSize(inputFFTResult);
 
 	// Calculate the scale factor we are going to apply
-	float scaleFactor = float(resolution.x * resolution.x);
+	float scaleFactor = float(resolution.x * resolution.y);
 
 	// Load the input data
 	float inputData;
@@ -36,13 +36,13 @@ void main()
 	float permutationMultiplier = -1.0;
 
 	if(permutationIndex == 0)
-		permutationMultiplier = 1.0;;
+		permutationMultiplier = 1.0;
 
-	//float result = permutationMultiplier * (inputData / scaleFactor);
-	float result = inputData;
-	imageStore(outputHeights, texelCoord, vec4(result, 
+	float result = permutationMultiplier * (inputData / scaleFactor);
+
+	imageStore(outputHeights, texelCoord, vec4(0.0, 
 	                                           result, 
-											   result, 1.0));
+											   0.0, 1.0));
 }
 
 // --------------------------------------------------------------------------------

@@ -50,12 +50,14 @@ namespace Rendering
 		Texture::Texture2D* GetTangentBuffer()      { return mTangentBuffer;      }
 		Texture::Texture2D* GetBinormalBuffer()     { return mBiNormalBuffer;     }
 		Texture::Texture2D* GetRandomNumberBuffer() { return mRandomNumberBuffer; }
-		Texture::Texture2D* GetButterflyTexture()   { return mButterflyTexture;   }
+		Texture::Texture2D* GetButterflyTwiddleTexture() { return mButterflyTexture; }
 
 		Texture::Texture2D* GetH0Buffer()                  { return mH0Buffer; }
 		Texture::Texture2D* GetFourierDomainValuesBuffer() { return mFourierDomainValues; }
 
 		void                SetPreset(SimulationMethods approach, char preset);
+
+		int debugPassCount = 0;
 
 	private:
 		void PerformanceTesting();
@@ -77,6 +79,9 @@ namespace Rendering
 
 		// this needs to be re-ran every time the resolution of the heightmap changes
 		void CreateButterflyTexture();
+		int* GenerateBitReversedIndicies();
+
+		int ReverseBits(int input);
 
 		// ------------------------------------------------------------- //
 		// --------------------- Modelling surface --------------------- //
@@ -163,6 +168,8 @@ namespace Rendering
 		bool                           mWireframe;
 
 		float                          mRunningTime;
+
+		unsigned int mMemoryBarrierBlockBits;
 
 		const unsigned int             kComputeShaderThreadClusterSize;
 	};

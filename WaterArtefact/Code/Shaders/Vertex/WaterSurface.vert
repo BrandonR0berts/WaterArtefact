@@ -30,6 +30,7 @@ void main()
 	textureCoords = vec2(offsettedVertexPosition.x / totalDistance, offsettedVertexPosition.y / totalDistance) * textureCoordScale;
 
 	vec4 position = texture(positionalBuffer, textureCoords);
+	position = vec4(0.0, 0.0, 0.0, 0.0);
 
 	worldPosition = vec3(modelMat * vec4(vertexPosition.x + position.x, position.y, vertexPosition.y + position.z, 1.0));
 	gl_Position   = projectionMat * viewMat * modelMat * vec4(vertexPosition.x + position.x, position.y, vertexPosition.y + position.z, 1.0);

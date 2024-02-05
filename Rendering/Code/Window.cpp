@@ -40,7 +40,7 @@ namespace Rendering
 	unsigned int         Window::sFramesRenderedLastSecond      = 0;
 	bool                 Window::mActiveModelLineMode           = false;
 
-	float                Window::kTimePerUpdate                 = 1.0f / 30.0f;
+	float                Window::kTimePerUpdate                 = 1.0f / 60.0f;
 
 	// -------------------------------------------------
 
@@ -380,7 +380,7 @@ namespace Rendering
 		sRenderPipeline->Render();
 
 		if(updateWater)
-			updateDelayTimer -= kTimePerUpdate;
+			updateDelayTimer = 0.0f;
 
 		// --------------------------------
 	}

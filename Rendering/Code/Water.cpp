@@ -59,9 +59,9 @@ namespace Rendering
 		, mHighestLODDimensions(0.0f)
 
 		, mDimensions(100)
-		, mDistanceBetweenVerticies(0.3)
+		, mDistanceBetweenVerticies(0.3f)
 
-		, mTextureResolution(1024) // 1024
+		, mTextureResolution(512) // 1024
 
 		, mWaterVAO(nullptr)
 		, mWaterEBO(nullptr)
@@ -77,8 +77,9 @@ namespace Rendering
 		, mWireframe(false)
 
 		, mRunningTime(0.0f)
+		, mMemoryBarrierBlockBits(GL_ALL_BARRIER_BITS)
 
-		, kComputeShaderThreadClusterSize(32)
+		, kComputeShaderThreadClusterSize(16)
 	{
 		// Compute and final render shaders
 		SetupShaders();
@@ -176,8 +177,8 @@ namespace Rendering
 			mH0Buffer          ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 			mRandomNumberBuffer->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
+			mGenerateH0_ComputeShader->SetVec2("windVelocity", mTessendorfData.mWindVelocity);
 			mGenerateH0_ComputeShader->SetFloat("gravity",          mTessendorfData.mGravity);
-			mGenerateH0_ComputeShader->SetVec2("windVelocity",      mTessendorfData.mWindVelocity);
 			mGenerateH0_ComputeShader->SetFloat("phillipsConstant", mTessendorfData.mPhilipsConstant);
 			mGenerateH0_ComputeShader->SetVec2("LxLz",              mTessendorfData.mLxLz);
 
@@ -518,14 +519,7 @@ namespace Rendering
 			delete[] randomNumberData;
 		}
 
-		if (!mButterflyTexture)
-		{
-			mButterflyTexture = new Texture::Texture2D();
-
-			mButterflyTexture->InitEmpty(std::log2(mTextureResolution), mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
-
-			CreateButterflyTexture();
-		}
+		CreateButterflyTexture();
 	}
 
 	// ---------------------------------------------
@@ -536,13 +530,58 @@ namespace Rendering
 		{
 			mButterflyTexture = new Texture::Texture2D();
 
-			mButterflyTexture->InitEmpty(std::log2(mTextureResolution), mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
+			mButterflyTexture->InitEmpty((unsigned int)std::log2(mTextureResolution), mTextureResolution, true, GL_FLOAT, GL_RGBA32F, GL_RGBA);
 		}
 
-		mGenerateButterflyFFTData->UseProgram();
-			mButterflyTexture->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		// Generate the bit reversed indicies
+		Buffers::ShaderStorageBufferObject* indexDataBuffer = new Buffers::ShaderStorageBufferObject();
 
-			glDispatchCompute(std::log2(mTextureResolution), mTextureResolution / kComputeShaderThreadClusterSize, 1);
+		int* bitReversedIndicies = GenerateBitReversedIndicies();
+
+		indexDataBuffer->SetBufferData(bitReversedIndicies, sizeof(int) * mTextureResolution, GL_STATIC_DRAW);
+
+		delete[] bitReversedIndicies;
+
+		mGenerateButterflyFFTData->UseProgram();
+			mButterflyTexture        ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+			mGenerateButterflyFFTData->SetInt("N", (int)mTextureResolution);
+
+			indexDataBuffer->BindToBufferIndex(1);
+
+			glDispatchCompute((unsigned int)std::log2(mTextureResolution), mTextureResolution / kComputeShaderThreadClusterSize, 1);
+	}
+
+	// ---------------------------------------------
+
+	int* WaterSimulation::GenerateBitReversedIndicies()
+	{
+		int* returnData = new int[mTextureResolution];
+
+		for (int i = 0; i < (int)mTextureResolution; i++) 
+		{
+			returnData[i] = ReverseBits(i);
+		}
+
+		return returnData;
+	}
+
+	// ---------------------------------------------
+
+	int WaterSimulation::ReverseBits(int data)
+	{
+		unsigned int numberOfBits   = std::log2(mTextureResolution);
+		int reversedNumber = 0;
+
+		for (unsigned int i = 0; i < numberOfBits; i++) 
+		{
+			if ((data & (1 << i)))
+			{
+				reversedNumber |= 1 << ((numberOfBits - 1) - i);
+			}
+		}
+
+		return reversedNumber;
 	}
 
 	// ---------------------------------------------
@@ -550,6 +589,8 @@ namespace Rendering
 	void WaterSimulation::RenderDebugMenu()
 	{
 		ImGui::Begin("Water Simulation Debug");
+
+		ImGui::InputInt("test count", &debugPassCount);
 
 			// Pause
 			if (ImGui::Button("Toggle Simulation Pause"))
@@ -814,7 +855,7 @@ namespace Rendering
 		{
 			case SimulationMethods::Sine:
 
-				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				glMemoryBarrier(mMemoryBarrierBlockBits);
 
 				mWaterMovementComputeShader_Sine->UseProgram();
 
@@ -835,7 +876,7 @@ namespace Rendering
 
 			case SimulationMethods::Gerstner:
 
-				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				glMemoryBarrier(mMemoryBarrierBlockBits);
 
 				mWaterMovementComputeShader_Gerstner->UseProgram();
 
@@ -856,8 +897,6 @@ namespace Rendering
 
 			case SimulationMethods::Tessendorf:
 
-				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
 				// Generate the frequency values
 				mCreateFrequencyValues_ComputeShader->UseProgram();
 
@@ -875,67 +914,80 @@ namespace Rendering
 
 				glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 
-				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-				RunInverseFFT();				
+				RunInverseFFT();
 				
 			break;
 		}
+
+		glMemoryBarrier(0);
 	}
 
 	void WaterSimulation::RunInverseFFT()
 	{
 		// Now convert to world space heights
 		// Determine how many passess are needed
-		unsigned int passCount = std::log2(mTextureResolution);
+		int passCount = (int)std::log2(mTextureResolution);
 
 		mConvertToHeightValues_ComputeShader_FFT->UseProgram();
 
-		mFourierDomainValues   ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY,  GL_RGBA32F);
-		mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-		mSecondPositionalBuffer->BindForComputeShader(2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-		mButterflyTexture      ->BindForComputeShader(3, 0, GL_FALSE, 0, GL_READ_ONLY,  GL_RGBA32F);
+		mFourierDomainValues     ->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+		mPositionalBuffer        ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+		mSecondPositionalBuffer  ->BindForComputeShader(2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+		mButterflyTexture        ->BindForComputeShader(3, 0, GL_FALSE, 0, GL_READ_ONLY,  GL_RGBA32F);
 
 		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", true);
 
-		int runningPassCount = 0;
+		bool storingResultInBuffer1 = true;
 
 		// Horizontal passes
-		for (unsigned int i = 0; i < passCount; i++)
+		for (int i = 0; i < std::min<int>(debugPassCount, passCount); i++)
 		{
-			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			glMemoryBarrier(mMemoryBarrierBlockBits);
 
 			mConvertToHeightValues_ComputeShader_FFT->SetInt("passCount", i);
-			mConvertToHeightValues_ComputeShader_FFT->SetBool("storeDataInOutput1", !(runningPassCount % 2));
+			mConvertToHeightValues_ComputeShader_FFT->SetBool("storeDataInOutput1", storingResultInBuffer1);
 
 			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
 
-			runningPassCount++;
+			storingResultInBuffer1 = !storingResultInBuffer1;
 		}
 
 		mConvertToHeightValues_ComputeShader_FFT->SetBool("horizontal", false);
 
 		// Vertical passes
-		for (unsigned int i = 0; i < passCount; i++)
+		if (debugPassCount - passCount < 0)
+			passCount = 0;
+		else
+			passCount = std::min(debugPassCount - passCount, passCount);
+
+		for (int i = 0; i < passCount; i++)
 		{
-			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			glMemoryBarrier(mMemoryBarrierBlockBits);
 
 			mConvertToHeightValues_ComputeShader_FFT->SetInt("passCount", i);
-			mConvertToHeightValues_ComputeShader_FFT->SetBool("storeDataInOutput1", !(runningPassCount % 2));
+			mConvertToHeightValues_ComputeShader_FFT->SetBool("storeDataInOutput1", storingResultInBuffer1);
 
 			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
-
-			runningPassCount++;
+			
+			if(i != passCount - 1)
+				storingResultInBuffer1 = !storingResultInBuffer1;
 		}
 
-		// Now apply the correct scale factor and positive/negative multipliers
-		mFFTFinalStageProgram->UseProgram();
-			mFFTFinalStageProgram->SetBool("readFromPositionBuffer1", (runningPassCount % 2));
+		//glMemoryBarrier(mMemoryBarrierBlockBits);
 
-			mSecondPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-			mPositionalBuffer      ->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+		//if (passCount * 2 == debugPassCount)
+		//{
+		//	// Now apply the correct scale factor and positive/negative multipliers
+		//	mFFTFinalStageProgram->UseProgram();
+		//		mFFTFinalStageProgram->SetBool("readFromPositionBuffer1", storingResultInBuffer1);
 
-			glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
+		//		mSecondPositionalBuffer->BindForComputeShader(0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+		//		mPositionalBuffer->BindForComputeShader(1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+		//	glDispatchCompute(mTextureResolution / kComputeShaderThreadClusterSize, mTextureResolution / kComputeShaderThreadClusterSize, 1);
+
+		//	glMemoryBarrier(mMemoryBarrierBlockBits);
+		//}
 	}
 
 	// ---------------------------------------------
@@ -950,7 +1002,7 @@ namespace Rendering
 		// Then the fragment shader used information given to it from the other textures output by the compute shader
 
 		// Make sure the compute shader has finished before reading from the textures
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glMemoryBarrier(mMemoryBarrierBlockBits);
 
 		mWaterVAO->Bind();
 
@@ -963,13 +1015,7 @@ namespace Rendering
 			renderPipeline->SetLineModeEnabled(mWireframe);
 
 			// Textures
-
-			// If we are using the tessendorf approach, and the amount of passes required to fully finish the FFTs is odd, then the final data will be in the second buffer instead of the main one 
-			//if(mModellingApproach == SimulationMethods::Tessendorf && (int)std::log2(mTextureResolution) % 2 == 1)
-			//	renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mSecondPositionalBuffer->GetTextureID(), true);
-			//else
-				renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mPositionalBuffer->GetTextureID(), true);
-
+			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE0, mPositionalBuffer->GetTextureID(), true);
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE1, mNormalBuffer->GetTextureID(),     true);
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE2, mTangentBuffer->GetTextureID(),    true);
 			renderPipeline->BindTextureToTextureUnit(GL_TEXTURE3, mBiNormalBuffer->GetTextureID(),   true);
@@ -999,19 +1045,19 @@ namespace Rendering
 			// ------------------------------------------------------------------------------------------------
 
 			// Determine if the camera is below the surface of the water, and if so then we need to flip the culling order
-			if(IsBelowSurface(camera->GetPosition()))
+			/*if(IsBelowSurface(camera->GetPosition()))
 			{
 				glCullFace(GL_FRONT);
 			}
 			else
 			{
 				glCullFace(GL_BACK);
-			}
+			}*/
 
 			// Now handle the LODs
 			for (int i = 0; i <= mLevelOfDetailCount; i++)
 			{
-				float                          LODscaleFactor = std::powf(3.0f, i);
+				float                          LODscaleFactor = (float)std::powf(3.0f, i);
 				float                          dimensions     = (mHighestLODDimensions * LODscaleFactor) * 2.0f;
 
 				Maths::Vector::Vector2D<float> backLeftPos    = Maths::Vector::Vector2D<float>(-dimensions, -dimensions);
@@ -1228,7 +1274,7 @@ namespace Rendering
 		// the ones that dont will be capped to 0 and 1
 		std::normal_distribution<float> normalDistibution{0.5, 0.5};
 
-		float randomValue1, randomValue2;
+		float randomValue1, randomValue2, randomValue3, randomValue4;
 		unsigned int currentIndex = 0;
 
 		for (unsigned int y = 0; y < mTextureResolution; y++)
@@ -1241,7 +1287,11 @@ namespace Rendering
 				randomValue1 = normalDistibution(gen);
 				randomValue2 = normalDistibution(gen);
 
-				returnData[currentIndex] = Maths::Vector::Vector4D<float>(randomValue1, randomValue2, 0.0f, 0.0f);
+				// For -k texture
+				randomValue3 = normalDistibution(gen);
+				randomValue4 = normalDistibution(gen);
+
+				returnData[currentIndex] = Maths::Vector::Vector4D<float>(randomValue1, randomValue2, randomValue3, randomValue4);
 			}
 		}
 
