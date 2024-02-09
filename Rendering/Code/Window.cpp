@@ -280,7 +280,7 @@ namespace Rendering
 						unsigned int screenWidth  = sRenderPipeline->GetScreenWidth();
 						unsigned int screenHeight = sRenderPipeline->GetScreenHeight();
 
-						sRenderPipeline->OnScreenSizeChanged({ screenWidth, screenHeight });
+						sRenderPipeline->OnScreenSizeChanged({ std::max<unsigned int>(screenWidth, 1), std::max<unsigned int>(screenHeight, 1) });
 					}
 				}
 			}

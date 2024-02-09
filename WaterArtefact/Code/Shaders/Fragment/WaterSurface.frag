@@ -1,21 +1,5 @@
 #version 330 core
 
-
-// Fresnel effect
-// thinmatrix videos
-
-// Refraction
-// Use existing 
-
-// Sub surface scattering
-// https://unitywatershader.wordpress.com/2018/05/19/subsurface-scattering/
-// https://www.alanzucconi.com/2017/08/30/fast-subsurface-scattering-1/
-
-
-
-
-
-
 out vec4 FragColor;
 
 // ----------------------------------------------------------------
@@ -45,7 +29,6 @@ uniform vec3        waterColour;
 
 // The ambient brightness of the ocean
 uniform vec3        ambientColour;
-
 
 uniform bool        renderingSineGeneration;
 
