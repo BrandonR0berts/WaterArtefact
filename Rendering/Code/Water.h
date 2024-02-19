@@ -58,8 +58,6 @@ namespace Rendering
 		void                SetPreset(SimulationMethods approach, char preset);
 
 	private:
-		void PerformanceTesting();
-
 		void SetupBuffers();
 		void SetupShaders();
 		void SetupTextures();

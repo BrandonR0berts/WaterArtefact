@@ -603,12 +603,6 @@ namespace Rendering
 				mWireframe = !mWireframe;
 			}
 
-			// Testing
-			if (ImGui::Button("Run performance tests"))
-			{
-				PerformanceTesting();
-			}
-
 			// Swapping approach
 			if (ImGui::CollapsingHeader("Modelling approach"))
 			{
@@ -1127,13 +1121,6 @@ namespace Rendering
 			renderPipeline->SetBackFaceCulling(true);
 
 		mWaterVAO->Unbind();
-	}
-
-	// ---------------------------------------------
-
-	void WaterSimulation::PerformanceTesting()
-	{
-
 	}
 
 	// ---------------------------------------------
